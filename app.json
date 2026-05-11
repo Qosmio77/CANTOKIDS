@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "name": "CantoKids",
+    "slug": "cantokids",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FFFBEB",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFBEB"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.cantokids.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "CantoKids 需要麥克風權限以支援語音練習功能。",
+        "NSCameraUsageDescription": "CantoKids 不使用攝影機。",
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserTrackingUsageDescription": "CantoKids 不追蹤用戶資料。"
+      }
+    },
+    "android": {
+      "package": "com.cantokids.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFBEB"
+      },
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.VIBRATE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-av"
+    ],
+    "privacy": "unlisted",
+    "description": "CantoKids — 為小朋友設計的繁體字與廣東話學習應用程式。透過筆順動畫、聆聽測驗及徽章獎勵，讓學習漢字變得有趣！",
+    "keywords": [
+      "Cantonese",
+      "Traditional Chinese",
+      "kids",
+      "education",
+      "language learning",
+      "廣東話",
+      "繁體字"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0f99add3-2b7e-48b0-8fe6-a6ead6e9f0d5"
+      }
+    },
+    "owner": "qosmio77"
+  }
+}

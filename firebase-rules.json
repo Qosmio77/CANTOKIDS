@@ -1,0 +1,21 @@
+{
+  "rules": {
+    "qr_sessions": {
+      "$sessionId": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChildren(['status', 'createdAt'])",
+        "status": {
+          ".validate": "newData.val() === 'pending' || newData.val() === 'scanned' || newData.val() === 'authenticated' || newData.val() === 'rejected'"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

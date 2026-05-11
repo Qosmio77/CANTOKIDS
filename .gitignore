@@ -1,0 +1,16 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+yarn-error.*
+# Firebase 私密設定
+.env
+# OS
+.DS_Store
