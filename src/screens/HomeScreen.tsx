@@ -1,21 +1,18 @@
 /**
- * HomeScreen — 首頁
+ * HomeScreen — Honey Bear Joy 風格 (Phase 6 UI Refresh)
  *
- * 架構概覽（Phase 1–5）：
- *   ┌─ Header ──────────────────────────────────────────────────────┐
- *   │  greeting + rank row  |  StreakBadge · ⭐ · 👤 · ⚙️         │
- *   └───────────────────────────────────────────────────────────────┘
- *   ┌─ EnergyCard (Phase 3) ────────────────────────────────────────┐
- *   │  ⚡ Star Power  [47%]  ▓▓▓▓▓▓▓░░░●  Charged 5/100 · 🚀…    │
- *   │  FloatingXP overlay（從課程返回時顯示 +N XP 動畫）           │
- *   └───────────────────────────────────────────────────────────────┘
- *   ┌─ Today's Learning Grid (Phase 2) ─────────────────────────────┐
- *   │  6 × WordCard（🔊喇叭 · 大字 · 漣漪 · 震動）                │
- *   └───────────────────────────────────────────────────────────────┘
- *   [Continue]  [Quiz]
- *   [🎙️ Practice Speaking ── Soon ──]   ← Phase 4 placeholder
- *   ─ Badges entry ─
- *   ─ My Pets entry ─
+ * 佈局（由上至下）：
+ *   ① Header        — 頭像圓圈 + 問候語 + 連勝/星數/設定
+ *   ② Daily Goal    — 暖黃卡片，顯示學習進度條
+ *   ③ Categories    — 6 個主題分類卡（2 列），點按進入對應關卡
+ *   ④ Daily Challen — 大橙色 CTA 按鈕（跳測驗）
+ *   ⑤ Shortcuts     — 徽章 + My Pets 快捷入口
+ *
+ * 設計系統：Honey Bear Joy
+ *   • 背景：暖奶油 #fbf9f1
+ *   • 主色：琥珀黃 + 活力橙
+ *   • 分類卡：天藍 / 薄荷 / 蜜黃 / 薰衣草 / 粉紅 / 蜜桃
+ *   • 圓角：24px cards, pill buttons
  */
 
 import React, { useRef, useState, useCallback } from 'react';
@@ -26,21 +23,17 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
-  Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import WordCard from '../components/WordCard';
 import FloatingXP from '../components/FloatingXP';
 import StreakBadge from '../components/StreakBadge';
-import { useProgressStore, getRankByXP, getRankName } from '../store/useProgressStore';
-import { useAudio } from '../hooks/useAudio';
+import { useProgressStore, getRankByXP } from '../store/useProgressStore';
 import { Colors } from '../theme/colors';
 import { getUnlockedBadges, buildBadgeStats, TOTAL_WORDS } from '../services/badgeService';
 import {
-  // SEEDLING_WORDS is the only word list used on HomeScreen (first 6 preview cards)
-  // SAPLING_WORDS … GALAXY_WORDS are intentionally omitted — not rendered here
-  SEEDLING_WORDS,
+  SEEDLING_WORDS,  SAPLING_WORDS,  TREE_WORDS,
+  SUNFLOWER_WORDS, RAINBOW_WORDS,  GALAXY_WORDS,
   SEEDLING_IDS, SAPLING_IDS, TREE_IDS,
   SUNFLOWER_IDS, RAINBOW_IDS, GALAXY_IDS,
   BAMBOO_IDS, JADE_IDS,
@@ -48,16 +41,67 @@ import {
 import { TREASURES } from '../data/treasures';
 import { useTranslation } from '../hooks/useTranslation';
 
+// ── 主題分類定義 ────────────────────────────────────────────────────
+interface CategoryDef {
+  id: string;
+  emoji: string;
+  nameKey: string;
+  words: typeof SEEDLING_WORDS;
+  ids: number[];
+  bgColor: string;
+  borderColor: string;
+  requiresPremium: boolean;
+}
+
+const CATEGORIES: CategoryDef[] = [
+  {
+    id: 'animals',   emoji: '🐶', nameKey: 'catAnimals',
+    words: SAPLING_WORDS,  ids: SAPLING_IDS,
+    bgColor: Colors.catAnimalsBg, borderColor: Colors.catAnimalsBorder,
+    requiresPremium: true,
+  },
+  {
+    id: 'nature',    emoji: '🌿', nameKey: 'catNature',
+    words: SEEDLING_WORDS, ids: SEEDLING_IDS,
+    bgColor: Colors.catNatureBg,  borderColor: Colors.catNatureBorder,
+    requiresPremium: false,
+  },
+  {
+    id: 'numbers',   emoji: '🔢', nameKey: 'catNumbers',
+    words: SUNFLOWER_WORDS, ids: SUNFLOWER_IDS,
+    bgColor: Colors.catNumbersBg, borderColor: Colors.catNumbersBorder,
+    requiresPremium: true,
+  },
+  {
+    id: 'colors',    emoji: '🎨', nameKey: 'catColors',
+    words: RAINBOW_WORDS,  ids: RAINBOW_IDS,
+    bgColor: Colors.catColorsBg,  borderColor: Colors.catColorsBorder,
+    requiresPremium: true,
+  },
+  {
+    id: 'family',    emoji: '👨‍👩‍👧', nameKey: 'catFamily',
+    words: GALAXY_WORDS,   ids: GALAXY_IDS,
+    bgColor: Colors.catFamilyBg,  borderColor: Colors.catFamilyBorder,
+    requiresPremium: true,
+  },
+  {
+    id: 'daily',     emoji: '📚', nameKey: 'catDaily',
+    words: TREE_WORDS,     ids: TREE_IDS,
+    bgColor: Colors.catDailyBg,   borderColor: Colors.catDailyBorder,
+    requiresPremium: true,
+  },
+];
+
+// ── Component ────────────────────────────────────────────────────────
 export default function HomeScreen({ navigation }: any) {
   const {
     displayName, totalStars, wordProgress, streakDays, perfectQuizzes,
-    unlockedLessons, playerXP, treasures,
+    unlockedLessons, playerXP, treasures, isPremium,
   } = useProgressStore();
   const rank = getRankByXP(playerXP);
-  const { playWord } = useAudio();
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
 
-  // 使用 buildBadgeStats helper，確保與 badgeService 邏輯一致
+  // Badge stats
   const badgeStats = buildBadgeStats(
     wordProgress, totalStars, perfectQuizzes, streakDays,
     SEEDLING_IDS, SAPLING_IDS, TREE_IDS,
@@ -69,22 +113,9 @@ export default function HomeScreen({ navigation }: any) {
   const unlockedBadgeCount = getUnlockedBadges(badgeStats).length;
   const ownedTreasureCount = Object.values(treasures).filter((c) => c > 0).length;
 
-  // 修復 F-2: 計算「繼續學習」的下一課（第一個已解鎖但未完成的課）
-  const nextLessonWord = SEEDLING_WORDS.find((w, idx) => {
-    const lessonId = idx + 1;
-    const isUnlocked = unlockedLessons.includes(lessonId) || lessonId === 1;
-    const isLearned = wordProgress[w.id]?.learned ?? false;
-    return isUnlocked && !isLearned;
-  });
-  const continueLessonId = nextLessonWord
-    ? SEEDLING_WORDS.indexOf(nextLessonWord) + 1
-    : 1;
-  const continueWordId = nextLessonWord?.id ?? 1;
-  const hasStarted = learnedCount > 0;
-
-  // Phase 3 — 浮動 +XP 動畫：從課程回來時偵測 XP 增量
-  const prevXPRef      = useRef(playerXP);
-  const [showXP, setShowXP]   = useState(false);
+  // 浮動 +XP 動畫
+  const prevXPRef = useRef(playerXP);
+  const [showXP, setShowXP] = useState(false);
   const [xpGained, setXpGained] = useState(0);
 
   useFocusEffect(
@@ -99,422 +130,399 @@ export default function HomeScreen({ navigation }: any) {
     }, [playerXP]),
   );
 
+  // 頭像首字母
+  const initials = (displayName ?? '?').charAt(0).toUpperCase();
+
+  // 分類卡點按
+  const handleCategoryPress = (cat: CategoryDef) => {
+    if (cat.requiresPremium && !isPremium) {
+      navigation.navigate('ParentLogin');
+      return;
+    }
+    const firstWord = cat.words[0];
+    if (!firstWord) return;
+    navigation.navigate('Lesson', { wordId: firstWord.id, lessonId: 1 });
+  };
+
+  // 每個分類已學字數
+  const getLearnedCount = (ids: number[]) =>
+    ids.filter((id) => wordProgress[id]?.learned).length;
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* 頂部歡迎區 */}
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+
+        {/* ① Header ───────────────────────────────────────────── */}
         <View style={styles.header}>
-          {/* flex:1 + minWidth:0 讓左欄收縮，不擠壓右側 badge row */}
-          <View style={styles.headerLeft}>
-            <Text style={styles.greeting} numberOfLines={1}>{t('greeting', { name: displayName })}</Text>
-            {/* 玩家等級 */}
-            <View style={styles.rankRow}>
-              <Text style={styles.rankEmoji}>{rank.emoji}</Text>
-              <Text style={styles.rankName} numberOfLines={1}>
-                Lv.{rank.level} {getRankName(rank, language)}
-              </Text>
-              <Text style={styles.xpText}>{playerXP} XP</Text>
-            </View>
+          {/* 頭像圓圈 */}
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
-          {/* flexShrink:0 防止 badge row 被擠壓 */}
-          <View style={[styles.badgeRow, { flexShrink: 0 }]}>
-            {/* Phase 5 — 連勝火焰脈動（獨立元件，動畫不污染此 scope）*/}
+
+          {/* 問候 + 等級 */}
+          <View style={styles.headerCenter}>
+            <Text style={styles.greeting} numberOfLines={1}>
+              {t('greeting', { name: displayName })}
+            </Text>
+            <Text style={styles.rankLine} numberOfLines={1}>
+              {rank.emoji} Lv.{rank.level} · {playerXP} XP
+            </Text>
+          </View>
+
+          {/* 右側 badge row */}
+          <View style={styles.badgeRow}>
             <StreakBadge streakDays={streakDays} />
-            <View style={styles.starBadge}>
-              <Ionicons name="star" size={18} color="#F59E0B" />
-              <Text style={styles.starCount}>{totalStars}</Text>
-            </View>
             <TouchableOpacity
-              style={[styles.starBadge, styles.parentBadge]}
-              onPress={() => navigation.navigate('ParentLogin')}
-              accessibilityLabel="家長控制台"
-            >
-              <Ionicons name="people" size={16} color={Colors.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.starBadge, styles.parentBadge]}
+              style={styles.iconBtn}
               onPress={() => navigation.navigate('Settings')}
               accessibilityLabel="設定"
             >
-              <Ionicons name="settings-outline" size={16} color={Colors.primary} />
+              <Ionicons name="settings-outline" size={18} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* ⚡ Phase 3 — Star Power / Energy System 卡片 */}
-        <View style={styles.energyCard}>
-          {/* 頭部：標題 + 百分比 */}
-          <View style={styles.energyHeader}>
-            <Text style={styles.energyTitle}>{t('energyTitle')}</Text>
-            <View style={styles.energyPercentBadge}>
-              <Text style={styles.energyPercentText}>{progressPercent}%</Text>
+        {/* ② Daily Goal Card ──────────────────────────────────── */}
+        <View style={styles.goalCard}>
+          <View style={styles.goalHeader}>
+            <View>
+              <Text style={styles.goalLabel}>{t('dailyGoalTitle')}</Text>
+              <Text style={styles.goalProgress}>
+                {t('dailyGoalProgress', { n: learnedCount, total: TOTAL_WORDS })}
+              </Text>
             </View>
+            <Text style={styles.goalPercent}>{progressPercent}%</Text>
           </View>
 
-          {/* 能量條區塊 */}
-          <View style={styles.energyBarWrapper}>
-            {/* 軌道：overflow:hidden 確保填充色切齊圓角 */}
-            <View style={styles.energyBarTrack}>
-              <View style={[styles.energyBarFill, { width: `${Math.max(progressPercent, 2)}%` as any }]} />
-              {/* 能量格線 (5 條分隔) */}
-              {[20, 40, 60, 80].map((pct) => (
-                <View key={pct} style={[styles.energyDivider, { left: `${pct}%` as any }]} />
-              ))}
-            </View>
-            {/* 發光端點：在 wrapper 絕對定位，不受 track 的 overflow:hidden 影響 */}
-            {progressPercent > 0 && (
-              <View
-                style={[
-                  styles.energyGlowDot,
-                  { left: `${Math.min(progressPercent, 96)}%` as any },
-                ]}
-              />
-            )}
+          {/* 進度條 */}
+          <View style={styles.goalBarTrack}>
+            <View style={[styles.goalBarFill, { width: `${Math.max(progressPercent, 2)}%` as any }]} />
           </View>
 
-          {/* 充能數量 + 副標 */}
-          <View style={styles.energyFooter}>
-            <Text style={styles.energyCharged}>
-              {t('energyCharged', { learned: learnedCount, total: TOTAL_WORDS })}
-            </Text>
-            <Text style={styles.energySubtext}>{t('energySubtext')}</Text>
-          </View>
+          <Text style={styles.goalSubtext}>{t('dailyGoalSubtext')}</Text>
 
-          {/* 浮動 +XP 動畫（覆蓋在卡片上） */}
-          <FloatingXP
-            amount={xpGained}
-            visible={showXP}
-            onDone={() => setShowXP(false)}
-          />
+          {/* 浮動 +XP */}
+          <FloatingXP amount={xpGained} visible={showXP} onDone={() => setShowXP(false)} />
         </View>
 
-        {/* 今日學習 — 會呼吸的字卡 (Phase 2) */}
-        <Text style={styles.sectionTitle}>{t('todayLearning')}</Text>
-        <View style={styles.wordGrid}>
-          {SEEDLING_WORDS.slice(0, 6).map((word, index) => {
-            const lessonId  = index + 1;
-            const isLearned = wordProgress[word.id]?.learned ?? false;
+        {/* ③ Categories ───────────────────────────────────────── */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('categoriesTitle')}</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Map')}>
+            <Text style={styles.seeAll}>{t('seeAll')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.categoryGrid}>
+          {CATEGORIES.map((cat) => {
+            const locked = cat.requiresPremium && !isPremium;
+            const learned = getLearnedCount(cat.ids);
+            const total = cat.ids.length;
             return (
-              // 每張卡片外包一層固定寬度的 View，
-              // WordCard 內部 flex:1 撐滿，確保 3 欄對齊
-              <View key={word.id} style={styles.wordCardWrapper}>
-                <WordCard
-                  word={word}
-                  isLearned={isLearned}
-                  onPress={() =>
-                    navigation.navigate('Lesson', { wordId: word.id, lessonId })
-                  }
-                  onLongPress={() => playWord(word.character, 'cantonese')}
-                  onAudioPress={() => playWord(word.character, 'cantonese')}
-                />
-              </View>
+              <TouchableOpacity
+                key={cat.id}
+                style={[
+                  styles.categoryCard,
+                  { backgroundColor: cat.bgColor, borderColor: cat.borderColor },
+                  locked && styles.categoryCardLocked,
+                ]}
+                onPress={() => handleCategoryPress(cat)}
+                activeOpacity={0.8}
+                accessibilityLabel={`${t(cat.nameKey as any)}, ${learned}/${total} lessons`}
+              >
+                {/* 鎖定遮罩 */}
+                {locked && (
+                  <View style={styles.lockOverlay}>
+                    <Text style={styles.lockIcon}>🔒</Text>
+                  </View>
+                )}
+                <Text style={styles.catEmoji}>{cat.emoji}</Text>
+                <Text style={styles.catName}>{t(cat.nameKey as any)}</Text>
+                <Text style={styles.catProgress}>
+                  {t('lessonsProgress', { n: learned, total })}
+                </Text>
+              </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* 快速行動按鈕列 */}
-        <View style={styles.ctaRow}>
-          {/* 修復 F-2: 顯示「繼續學習」或「開始學習」，導航至正確課程 */}
-          <TouchableOpacity
-            style={styles.ctaButton}
-            onPress={() =>
-              navigation.navigate('Lesson', { wordId: continueWordId, lessonId: continueLessonId })
-            }
-            accessibilityLabel={hasStarted ? t('continueLearning') : t('startLearning')}
-          >
-            <Ionicons name="book" size={20} color={Colors.white} />
-            <Text style={styles.ctaText}>{hasStarted ? t('continueLearning') : t('startLearning')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.ctaButton, styles.ctaQuiz]}
-            onPress={() => navigation.navigate('QuizMenu')}
-            accessibilityLabel={t('interactiveQuiz')}
-          >
-            <Ionicons name="game-controller" size={20} color={Colors.white} />
-            <Text style={styles.ctaText}>{t('interactiveQuiz')}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Phase 4 — 🎙️ 練習說話按鈕（發音預留） */}
+        {/* ④ Daily Challenge CTA ─────────────────────────────── */}
         <TouchableOpacity
-          style={styles.micButton}
-          onPress={() =>
-            Alert.alert('🎙️', t('micComingSoon'), [{ text: 'OK', style: 'default' }])
-          }
-          accessibilityLabel={t('practiceSpeaking')}
+          style={styles.challengeBtn}
+          onPress={() => navigation.navigate('QuizMenu')}
+          activeOpacity={0.85}
+          accessibilityLabel={t('dailyChallenge')}
         >
-          <Ionicons name="mic" size={20} color={Colors.primary} />
-          <Text style={styles.micText}>{t('practiceSpeaking')}</Text>
-          {/* "Coming Soon" 標籤 */}
-          <View style={styles.comingSoonBadge}>
-            <Text style={styles.comingSoonText}>Soon</Text>
+          <Ionicons name="game-controller" size={22} color={Colors.white} />
+          <Text style={styles.challengeText}>{t('dailyChallenge')}</Text>
+          <View style={styles.challengeArrow}>
+            <Ionicons name="arrow-forward" size={18} color={Colors.white} />
           </View>
         </TouchableOpacity>
 
-        {/* 徽章快捷入口 */}
+        {/* ⑤ Shortcuts ─────────────────────────────────────────── */}
         <TouchableOpacity
-          style={styles.badgeEntry}
+          style={styles.shortcut}
           onPress={() => navigation.navigate('Badges')}
-          accessibilityLabel={`查看徽章，已解鎖 ${unlockedBadgeCount} 個`}
         >
-          <Text style={styles.badgeEntryEmoji}>🏅</Text>
-          <View style={styles.badgeEntryInfo}>
-            <Text style={styles.badgeEntryTitle}>{t('myBadges')}</Text>
-            <Text style={styles.badgeEntryDesc}>
+          <Text style={styles.shortcutEmoji}>🏅</Text>
+          <View style={styles.shortcutInfo}>
+            <Text style={styles.shortcutTitle}>{t('myBadges')}</Text>
+            <Text style={styles.shortcutDesc}>
               {t('badgesCollected', { n: unlockedBadgeCount, total: 7 })}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
         </TouchableOpacity>
 
-        {/* 🥚 Phase 3 — My Pets 快捷入口 */}
         <TouchableOpacity
-          style={[styles.badgeEntry, styles.treasureEntry]}
+          style={[styles.shortcut, { marginTop: 10 }]}
           onPress={() => navigation.navigate('Treasure')}
-          accessibilityLabel={`${t('treasureVault')}，已孵化 ${ownedTreasureCount} 隻`}
         >
-          {/* 發光蛋圖示 */}
-          <View style={styles.petEggWrapper}>
-            <Text style={styles.badgeEntryEmoji}>🥚</Text>
-          </View>
-          <View style={styles.badgeEntryInfo}>
-            <Text style={styles.badgeEntryTitle}>{t('treasureVault')}</Text>
-            <Text style={styles.badgeEntryDesc}>
+          <Text style={styles.shortcutEmoji}>🥚</Text>
+          <View style={styles.shortcutInfo}>
+            <Text style={styles.shortcutTitle}>{t('treasureVault')}</Text>
+            <Text style={styles.shortcutDesc}>
               {t('treasuresCollected', { n: ownedTreasureCount, total: TREASURES.length })}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
         </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+// ── Styles ───────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // ── 全域佈局 ──────────────────────────────────────────────────────
-  // 背景：暖奶油（兒童友好，護眼）
   safeArea: { flex: 1, backgroundColor: Colors.primaryBg },
-  container: { padding: 20, paddingBottom: 40 },
+  container: { padding: 20, paddingBottom: 48, gap: 0 },
 
-  // ── 頂部 Header ───────────────────────────────────────────────────
+  // ① Header
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
     marginBottom: 20,
-    gap: 8,
   },
-  // flex:1 + minWidth:0 讓左欄可以收縮，避免擠壓右側 badge row
-  headerLeft: {
-    flex: 1,
-    minWidth: 0,
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  greeting: { fontSize: 22, fontWeight: '700', color: Colors.text },
-  rankRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  rankEmoji: { fontSize: 18 },
-  rankName: { fontSize: 13, fontWeight: '700', color: Colors.primary },
-  xpText: { fontSize: 11, color: Colors.textMuted, fontWeight: '600' },
-  // flexShrink:0 讓 badge row 不被左欄文字擠壓
-  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  // 星數徽章（柔和黃背景，暖橙數字）
-  starBadge: {
+  avatarText: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: Colors.white,
+  },
+  headerCenter: { flex: 1, minWidth: 0 },
+  greeting: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  rankLine: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primaryMuted,   // Phase 5: 柔和黃，取代硬碼 #FEF3C7
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 4,
+    gap: 8,
+    flexShrink: 0,
   },
-  // StreakBadge 已抽為獨立元件，streakBadge 樣式可移除；保留 parentBadge
-  parentBadge: { backgroundColor: Colors.primaryMuted, paddingHorizontal: 10 },
-  // 深琥珀數字（星數）
-  starCount: { fontSize: 16, fontWeight: '700', color: Colors.primaryDeep },
-  // ── Phase 3: Energy System Card ─────────────────────────────────
-  energyCard: {
-    backgroundColor: '#0F172A',   // 深空背景
-    borderRadius: 20,
-    padding: 18,
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ② Daily Goal Card
+  goalCard: {
+    backgroundColor: Colors.goalCard,
+    borderRadius: 24,
+    padding: 20,
     marginBottom: 24,
-    // overflow: 'hidden' 不設定，讓 FloatingXP & 發光點可超出邊界
-    // 紫光邊框
-    borderWidth: 1,
-    borderColor: '#6366F1',
-    shadowColor: '#6366F1',
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.goalCardBorder,
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    elevation: 3,
   },
-  energyHeader: {
+  goalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  goalLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primaryDeep,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  goalProgress: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  goalPercent: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: Colors.primaryDark,
+  },
+  goalBarTrack: {
+    height: 12,
+    backgroundColor: Colors.goalBarTrack,
+    borderRadius: 6,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  goalBarFill: {
+    height: '100%',
+    backgroundColor: Colors.goalBar,
+    borderRadius: 6,
+  },
+  goalSubtext: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primaryDeep,
+    opacity: 0.75,
+  },
+
+  // ③ Categories
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 14,
   },
-  energyTitle: {
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: '800',
-    color: '#E2E8F0',
-    letterSpacing: 0.3,
+    color: Colors.text,
   },
-  energyPercentBadge: {
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: '#F59E0B',
+  seeAll: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.secondary,
   },
-  energyPercentText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#F59E0B',
-  },
-  // 能量條外層 wrapper（絕對定位發光點不受 track 的 overflow:hidden 影響）
-  energyBarWrapper: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  // 能量條軌道（overflow:hidden 夾住填充色到圓角邊界）
-  energyBarTrack: {
-    height: 14,
-    backgroundColor: '#1E293B',
-    borderRadius: 7,
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  // 充能填充（琥珀色）
-  energyBarFill: {
-    height: '100%',
-    backgroundColor: '#F59E0B',
-    borderRadius: 7,
-  },
-  // 發光前沿圓點（定位在 wrapper，不在 track 內，故不被夾住）
-  energyGlowDot: {
-    position: 'absolute',
-    top: -3,           // 讓點稍微突出軌道頂部
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#FDE68A',
-    shadowColor: '#F59E0B',
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 8,
-    marginLeft: -10,   // 水平置中對齊端點
-  },
-  // 能量格線（分隔符）
-  energyDivider: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 1,
-    backgroundColor: '#0F172A',
-    opacity: 0.5,
-  },
-  energyFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  energyCharged: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#94A3B8',
-  },
-  energySubtext: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#F59E0B',
-    opacity: 0.9,
-  },
-  // ── Pet Egg wrapper ──────────────────────────────────────────────
-  petEggWrapper: {
-    shadowColor: '#A78BFA',
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  // ── 區塊標題 ─────────────────────────────────────────────────────
-  sectionTitle: { fontSize: 17, fontWeight: '700', color: Colors.text, marginBottom: 12 },
-  wordGrid: {
+  categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 28,
+    gap: 12,
+    marginBottom: 24,
   },
-  // 寬度固定在 wrapper；WordCard 內部 flex:1 撐滿
-  wordCardWrapper: {
-    width: '30%',
-  },
-  ctaRow: { flexDirection: 'row', gap: 12, marginBottom: 0 },
-  ctaButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 8,
-  },
-  ctaQuiz: { backgroundColor: Colors.quiz },
-  ctaText: { fontSize: 16, fontWeight: '700', color: Colors.white },
-
-  // ── Phase 4: 麥克風按鈕 ─────────────────────────────────────────
-  micButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    marginBottom: 20,
-    paddingVertical: 13,
-    borderRadius: 16,
+  categoryCard: {
+    width: '47%',
+    borderRadius: 24,
     borderWidth: 2,
-    borderColor: Colors.primary,
-    borderStyle: 'dashed',
-    backgroundColor: Colors.primaryMuted,
-    gap: 8,
+    padding: 18,
+    alignItems: 'center',
+    gap: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    overflow: 'hidden',
   },
-  micText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.primary,
+  categoryCardLocked: {
+    opacity: 0.65,
   },
-  comingSoonBadge: {
-    backgroundColor: '#F59E0B',
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  lockOverlay: {
+    position: 'absolute',
+    top: 8,
+    right: 10,
   },
-  comingSoonText: {
-    fontSize: 10,
+  lockIcon: { fontSize: 14 },
+  catEmoji: { fontSize: 36, lineHeight: 44 },
+  catName: {
+    fontSize: 16,
     fontWeight: '800',
-    color: '#fff',
+    color: Colors.text,
+  },
+  catProgress: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+
+  // ④ Daily Challenge Button
+  challengeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.secondary,
+    borderRadius: 999,
+    paddingVertical: 18,
+    paddingHorizontal: 28,
+    marginBottom: 24,
+    gap: 10,
+    // 3D lip effect (Honey Bear style)
+    borderBottomWidth: 4,
+    borderBottomColor: Colors.secondaryDark,
+    shadowColor: Colors.secondary,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  challengeText: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.white,
     letterSpacing: 0.3,
   },
+  challengeArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
-  // ── 快捷入口卡片（徽章 / My Pets）─────────────────────────────────
-  // 白底 + 極輕陰影，比深色卡更柔和，符合 Phase 5 soft pastel 方向
-  badgeEntry: {
+  // ⑤ Shortcuts
+  shortcut: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.white,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 18,
+    padding: 16,
     gap: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.borderLight,
     shadowColor: Colors.text,
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 6,
-    elevation: 2,
+    elevation: 1,
   },
-  badgeEntryEmoji: { fontSize: 28 },
-  badgeEntryInfo: { flex: 1 },
-  badgeEntryTitle: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  badgeEntryDesc: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  treasureEntry: { marginTop: 12 },
+  shortcutEmoji: { fontSize: 28 },
+  shortcutInfo: { flex: 1 },
+  shortcutTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  shortcutDesc: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
 });

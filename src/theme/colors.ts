@@ -1,56 +1,71 @@
 /**
- * CantoKids 設計系統 — 顏色常數
+ * CantoKids 設計系統 — Honey Bear Joy 色系 (Phase 6 UI Refresh)
  *
- * 設計原則（Phase 5 更新）：
- *   • 主背景：暖奶油 (#FFFBEB) — 護眼，兒童友好
- *   • 行動按鈕：鮮豔琥珀 + 珊瑚橙 — 高對比，吸引點擊
- *   • 卡片 / 介面元素：柔和粉彩 — 舒緩，不刺激眼睛
- *   • 連勝 / 錯誤：紅色系 — 情緒識別
- *   • 已學完：薄荷綠系 — 成就感、正向回饋
+ * 設計靈感：Google Stitch「Honey Bear Joy」
+ *   • 背景：暖奶油 (#fbf9f1) — 比純白溫暖，護眼
+ *   • 主色：琥珀黃 (#E8A000) — 高對比 CTA
+ *   • 次色：活力橙 (#fd8b00) — Daily Challenge、Streak
+ *   • 分類卡：6 色柔和粉彩 — 動物/自然/數字/顏色/家人/生活
  */
 export const Colors = {
-  // ── 主色 — 暖金黃（行動按鈕、主要 CTA）─────────────────────────
-  primary:      '#F59E0B',   // 鮮豔琥珀，高對比
-  primaryLight: '#FDE68A',   // 淡金，邊框 / 強調
-  primaryBg:    '#FFFBEB',   // 主背景：暖奶油
-  primaryMuted: '#FEF3C7',   // 柔和黃，徽章 / 次要背景
-  primaryDeep:  '#D97706',   // 深琥珀，數字 / 星數
+  // ── 主色 — 琥珀黃 ─────────────────────────────────────────────
+  primary:       '#E8A000',   // 琥珀黃（CTA、高亮）
+  primaryDark:   '#705d00',   // 深黃棕
+  primaryLight:  '#ffe16d',   // 淡黃
+  primaryBg:     '#fbf9f1',   // 主背景：暖奶油
+  primaryMuted:  '#f5f4ec',   // 次要背景
+  primaryDeep:   '#544600',   // 最深黃棕（數字/標題）
 
-  // ── 柔和粉彩（Phase 5 新增）— 兒童友好，護眼 ───────────────────
-  softCream:    '#FFFDF7',   // 比 primaryBg 更暖的奶油（可用於卡片底色）
-  softMint:     '#F0FDF4',   // 柔和薄荷綠（成功 / 已學）
-  softPeach:    '#FFF7ED',   // 柔和蜜桃（測驗相關背景）
-  softLavender: '#F5F3FF',   // 柔和薰衣草（設定 / 次要入口）
+  // ── 次色 — 活力橙（CTA 按鈕、連勝）──────────────────────────
+  secondary:     '#fd8b00',   // 活力橙
+  secondaryDark: '#904d00',   // 深橙
+  secondaryLight:'#fff7ed',   // 淡橙底
 
-  // ── 成功 — 薄荷翠綠 ─────────────────────────────────────────────
-  success:       '#10B981',
-  successLight:  '#ECFDF5',
-  successBorder: '#6EE7B7',
+  // ── Daily Goal 卡片色 ────────────────────────────────────────
+  goalCard:      '#FFF3C4',   // 暖黃卡片底色
+  goalCardBorder:'#F0C060',   // 暖黃邊框
+  goalBar:       '#E8A000',   // 進度條填充
+  goalBarTrack:  '#F0E090',   // 進度條軌道
 
-  // ── 粵語 — 天空藍 ───────────────────────────────────────────────
-  cantonese:     '#3B82F6',
-  cantoneseLight:'#DBEAFE',
-  cantoneseBg:   '#EFF6FF',
+  // ── 主題分類卡 — 6 色柔和粉彩 ─────────────────────────────────
+  catAnimalsBg:   '#BAE6FD',  catAnimalsBorder: '#7DD3FC',  // 動物 — 天藍
+  catNatureBg:    '#BBF7D0',  catNatureBorder:  '#86EFAC',  // 自然 — 薄荷
+  catNumbersBg:   '#FEF9C3',  catNumbersBorder: '#FDE047',  // 數字 — 蜜黃
+  catColorsBg:    '#DDD6FE',  catColorsBorder:  '#C4B5FD',  // 顏色 — 薰衣草
+  catFamilyBg:    '#FCE7F3',  catFamilyBorder:  '#F9A8D4',  // 家人 — 粉紅
+  catDailyBg:     '#FED7AA',  catDailyBorder:   '#FDBA74',  // 生活 — 蜜桃
 
-  // ── 普通話 — 薰衣草紫 ───────────────────────────────────────────
-  mandarin:      '#7C3AED',
-  mandarinLight: '#EDE9FE',
+  // ── 成功 ─────────────────────────────────────────────────────
+  success:        '#16a34a',
+  successLight:   '#dcfce7',
+  successBorder:  '#86efac',
 
-  // ── 測驗 — 珊瑚橙（行動按鈕，高對比）──────────────────────────
-  quiz:          '#F97316',
-  quizLight:     '#FFF7ED',
+  // ── 粵語測驗 — 天藍 ──────────────────────────────────────────
+  cantonese:      '#3B82F6',
+  cantoneseLight: '#DBEAFE',
+  cantoneseBg:    '#EFF6FF',
 
-  // ── 中性色 ──────────────────────────────────────────────────────
-  text:          '#1F2937',  // 主文字，深炭灰
-  textSecondary: '#6B7280',  // 次要文字
-  textMuted:     '#9CA3AF',  // 輔助文字，淡灰
-  border:        '#E5E7EB',  // 一般邊框
-  borderLight:   '#F3F4F6',  // 淡邊框
-  white:         '#FFFFFF',
+  // ── 普通話測驗 — 薰衣草紫 ────────────────────────────────────
+  mandarin:       '#7C3AED',
+  mandarinLight:  '#EDE9FE',
 
-  // ── 連勝 / 錯誤 — 紅色系 ────────────────────────────────────────
-  streak:        '#EF4444',  // 火焰紅
-  streakBg:      '#FEF2F2',  // 火焰背景（柔和粉紅）
-  error:         '#EF4444',
-  errorLight:    '#FEF2F2',
+  // ── 測驗 CTA — 珊瑚橙 ────────────────────────────────────────
+  quiz:           '#F97316',
+  quizLight:      '#FFF7ED',
+
+  // ── 中性色 ───────────────────────────────────────────────────
+  text:           '#1b1c17',   // 暖近黑（主文字）
+  textSecondary:  '#4d4732',   // 暖棕（次要文字）
+  textMuted:      '#7e775f',   // 輔助文字
+  border:         '#d0c6ab',   // 暖邊框
+  borderLight:    '#e4e3db',   // 淡邊框
+  white:          '#ffffff',
+
+  // ── 連勝 — 橙色系（Honey Bear 用橙而非紅）────────────────────
+  streak:         '#fd8b00',   // 連勝橙
+  streakBg:       '#fff7ed',   // 連勝底色
+
+  // ── 錯誤 ─────────────────────────────────────────────────────
+  error:          '#ba1a1a',
+  errorLight:     '#ffdad6',
 } as const;

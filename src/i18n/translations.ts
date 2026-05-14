@@ -31,7 +31,7 @@ export const translations = {
     greeting:          '你好，{name}！ 👋',
     learningProgress:  '📊 學習進度',
     progressSummary:   '已學 {learned} / {total} 個漢字 · 共 8 個級別',
-    // Phase 3: Energy System
+    // Phase 3: Energy System (kept for other screens)
     energyTitle:       '⚡ 星力值',
     energyCharged:     '已充能 {learned} / {total} 格',
     energySubtext:     '🚀 正在為你的太空船充能…',
@@ -47,6 +47,21 @@ export const translations = {
     // Phase 3: My Pets (renamed from Treasure Vault)
     treasureVault:     '我的寵物',
     treasuresCollected:'已孵化 {n} / {total} 隻',
+    // Phase 6: Honey Bear UI — Daily Goal + Categories
+    dailyGoalTitle:    '學習目標',
+    dailyGoalProgress: '已學識 {n} / {total} 個字',
+    dailyGoalSubtext:  '繼續加油！🚀',
+    categoriesTitle:   '學習主題',
+    seeAll:            '查看全部',
+    dailyChallenge:    '每日挑戰',
+    catAnimals:        '動物',
+    catNature:         '自然',
+    catNumbers:        '數字',
+    catColors:         '顏色',
+    catFamily:         '家人',
+    catDaily:          '生活',
+    lessonsProgress:   '{n}/{total} 課',
+    levelLocked:       '需升級解鎖',
 
     // ── MapScreen ─────────────────────────────────────────
     learningMap:       '🗺️ 學習地圖',
@@ -248,6 +263,21 @@ export const translations = {
     // Phase 3: My Pets (renamed from Treasure Vault)
     treasureVault:     'My Pets',
     treasuresCollected:'Hatched {n} / {total}',
+    // Phase 6: Honey Bear UI — Daily Goal + Categories
+    dailyGoalTitle:    'Learning Goal',
+    dailyGoalProgress: '{n} / {total} Words Learned',
+    dailyGoalSubtext:  'Keep going! 🚀',
+    categoriesTitle:   'Categories',
+    seeAll:            'See All',
+    dailyChallenge:    'Daily Challenge',
+    catAnimals:        'Animals',
+    catNature:         'Nature',
+    catNumbers:        'Numbers',
+    catColors:         'Colors',
+    catFamily:         'Family',
+    catDaily:          'Daily Life',
+    lessonsProgress:   '{n}/{total} lessons',
+    levelLocked:       'Upgrade to unlock',
 
     // ── MapScreen ─────────────────────────────────────────
     learningMap:       '🗺️ Learning Map',
