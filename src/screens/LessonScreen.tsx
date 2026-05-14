@@ -1,12 +1,17 @@
 /**
- * LessonScreen — 單字課程頁面
+ * LessonScreen — 學習課室
  *
- * Phase 5 重寫：
- * - 支援全部 60 個漢字（透過 allWords.getWordById）
- * - 字義分頁：發音按鈕（粵 / 普）、意思、例句、筆畫數
- * - 練寫分頁：動畫示範 → 「開始練寫」→ 手寫測驗 → 動態星級結果
- * - unlockLesson 使用 lessonId（來自 route.params）
- * - 完成後提供「下一關」或「返回地圖」
+ * 支援三種內容：
+ *   character — 單字（原有流程）
+ *   word      — 詞語（2字）：顯示各分字拼音、逐字練寫
+ *   idiom     — 成語（4字）：同上
+ *
+ * 自適應字體：
+ *   1 字 → 72px | 2 字 → 56px | 4 字 → 40px
+ *
+ * 逐字練寫：
+ *   charIndex 指向目前正在練寫的分字
+ *   每字完成後移到下一字，最後一字完成才統計分數
  */
 
 import React, { useRef, useState, useCallback } from 'react';
@@ -34,10 +39,9 @@ import { useAudio } from '../hooks/useAudio';
 import { getWordById, ALL_WORDS, SEEDLING_IDS, SAPLING_IDS, TREE_IDS, SUNFLOWER_IDS, RAINBOW_IDS, GALAXY_IDS } from '../data/allWords';
 import { buildBadgeStats, getNewlyUnlockedBadges, Badge } from '../services/badgeService';
 import { Colors } from '../theme/colors';
+import { useTranslation } from '../hooks/useTranslation';
 
 type Tab = 'meaning' | 'write';
-
-// 練寫流程狀態機
 type WritePhase = 'animating' | 'ready' | 'quizzing' | 'done';
 
 function starsForMistakes(mistakes: number): number {
@@ -46,8 +50,28 @@ function starsForMistakes(mistakes: number): number {
   return 1;
 }
 
+/** 根據字數決定主字體大小 */
+function mainCharFontSize(charLength: number): number {
+  if (charLength <= 1) return 72;
+  if (charLength <= 2) return 56;
+  return 40;
+}
+
+/** 內容類型顯示標籤 */
+const CONTENT_TYPE_LABEL: Record<string, string> = {
+  character: '單字',
+  word:      '詞語',
+  idiom:     '成語',
+};
+const CONTENT_TYPE_COLOR: Record<string, string> = {
+  character: Colors.primary,
+  word:      '#059669',
+  idiom:     '#7C3AED',
+};
+
 export default function LessonScreen({ route, navigation }: any) {
   const { wordId, lessonId } = route.params as { wordId: number; lessonId: number };
+  const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<Tab>('meaning');
   const [writePhase, setWritePhase] = useState<WritePhase>('animating');
@@ -57,10 +81,14 @@ export default function LessonScreen({ route, navigation }: any) {
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [newRank, setNewRank] = useState<PlayerRank | null>(null);
 
+  // ── 多字練寫狀態 ──────────────────────────────────────────────────
+  const [charIndex, setCharIndex] = useState(0);
+  const accMistakesRef = useRef(0);
+
   // Star pop animation
   const starScale = useRef(new Animated.Value(0)).current;
-
   const writerRef = useRef<HanziWriterHandle>(null);
+
   const {
     markWordLearned, addStars, unlockLesson,
     playerXP, addXP,
@@ -70,78 +98,120 @@ export default function LessonScreen({ route, navigation }: any) {
   const word = getWordById(wordId);
   if (!word) return null;
 
-  // ── 動畫結束 → 顯示「開始練寫」按鈕
+  // ── 多字支援相關計算 ──────────────────────────────────────────────
+  const isMultiChar = (word.components?.length ?? 1) > 1;
+  const writeComponents = word.components ?? [word.character];
+  const currentWriteChar = writeComponents[charIndex];
+
+  /** 播放整個詞語/成語的發音（逐字間隔播放） */
+  const playMultiChar = useCallback((lang: 'cantonese' | 'mandarin') => {
+    const chars = word.components ?? [word.character];
+    chars.forEach((ch, i) => {
+      setTimeout(() => playWord(ch, lang), i * 650);
+    });
+  }, [word, playWord]);
+
+  // ── 動畫結束 → 顯示「開始練寫」 ─────────────────────────────────
   const handleAnimationComplete = useCallback(() => {
     setWritePhase('ready');
   }, []);
 
-  // ── 使用者按下「開始練寫」→ 進入 quiz 模式
+  // ── 開始練寫 ─────────────────────────────────────────────────────
   const handleStartQuiz = useCallback(() => {
     setWritePhase('quizzing');
     writerRef.current?.startQuiz();
   }, []);
 
-  // ── 練寫完成 → 給分、解鎖、XP、體力、徽章偵測、動畫
+  // ── 完成整個課程 ──────────────────────────────────────────────────
+  const finalizeLesson = useCallback((totalMistakes: number) => {
+    const stars = starsForMistakes(totalMistakes);
+
+    const storeBefore = useProgressStore.getState();
+    const statsBefore = buildBadgeStats(
+      storeBefore.wordProgress, storeBefore.totalStars,
+      storeBefore.perfectQuizzes, storeBefore.streakDays,
+      SEEDLING_IDS, SAPLING_IDS, TREE_IDS,
+      SUNFLOWER_IDS, RAINBOW_IDS, GALAXY_IDS,
+    );
+
+    markWordLearned(wordId);
+    addStars(stars);
+    unlockLesson(lessonId + 1);
+
+    const xpGained = XP_PER_WORD_LEARNED + (totalMistakes === 0 ? XP_PER_QUIZ_CORRECT * 2 : XP_PER_QUIZ_CORRECT);
+    const leveledUp = addXP(xpGained);
+    if (leveledUp) {
+      const currentXP = useProgressStore.getState().playerXP;
+      const rank = getRankByXP(currentXP);
+      setNewRank(rank);
+      setShowLevelUp(true);
+    }
+
+    const storeAfter = useProgressStore.getState();
+    const statsAfter = buildBadgeStats(
+      storeAfter.wordProgress, storeAfter.totalStars,
+      storeAfter.perfectQuizzes, storeAfter.streakDays,
+      SEEDLING_IDS, SAPLING_IDS, TREE_IDS,
+      SUNFLOWER_IDS, RAINBOW_IDS, GALAXY_IDS,
+    );
+    const unlocked = getNewlyUnlockedBadges(statsBefore, statsAfter);
+    if (unlocked.length > 0) {
+      setNewBadges(unlocked);
+      setShowBadgeModal(true);
+    }
+
+    setEarnedStars(stars);
+    setWritePhase('done');
+
+    Animated.spring(starScale, {
+      toValue: 1,
+      friction: 4,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  }, [wordId, lessonId, markWordLearned, addStars, unlockLesson, addXP, starScale]);
+
+  // ── 每個分字練寫完成 ──────────────────────────────────────────────
   const handleQuizComplete = useCallback(
-    (totalMistakes: number) => {
-      if (writePhase === 'done') return; // 防止重複
-      const stars = starsForMistakes(totalMistakes);
+    (mistakes: number) => {
+      if (writePhase === 'done') return;
 
-      // 抓取修改前的 stats（用於比對新解鎖徽章）
-      const storeBefore = useProgressStore.getState();
-      const statsBefore = buildBadgeStats(
-        storeBefore.wordProgress, storeBefore.totalStars,
-        storeBefore.perfectQuizzes, storeBefore.streakDays,
-        SEEDLING_IDS, SAPLING_IDS, TREE_IDS,
-        SUNFLOWER_IDS, RAINBOW_IDS, GALAXY_IDS,
-      );
-
-      // 套用進度更新（Zustand 同步執行）
-      markWordLearned(wordId);
-      addStars(stars);
-      unlockLesson(lessonId + 1);
-
-      // 計算並獎勵 XP
-      const xpGained = XP_PER_WORD_LEARNED + (totalMistakes === 0 ? XP_PER_QUIZ_CORRECT * 2 : XP_PER_QUIZ_CORRECT);
-      const leveledUp = addXP(xpGained);
-      if (leveledUp) {
-        const currentXP = useProgressStore.getState().playerXP;
-        const rank = getRankByXP(currentXP);
-        setNewRank(rank);
-        setShowLevelUp(true);
+      if (isMultiChar && charIndex < writeComponents.length - 1) {
+        // 還有下一個字
+        accMistakesRef.current += mistakes;
+        setCharIndex((prev) => prev + 1);
+        setWritePhase('animating');
+      } else {
+        // 全部完成
+        finalizeLesson(accMistakesRef.current + mistakes);
+        accMistakesRef.current = 0;
       }
-
-      // 比對新解鎖徽章
-      const storeAfter = useProgressStore.getState();
-      const statsAfter = buildBadgeStats(
-        storeAfter.wordProgress, storeAfter.totalStars,
-        storeAfter.perfectQuizzes, storeAfter.streakDays,
-        SEEDLING_IDS, SAPLING_IDS, TREE_IDS,
-        SUNFLOWER_IDS, RAINBOW_IDS, GALAXY_IDS,
-      );
-      const unlocked = getNewlyUnlockedBadges(statsBefore, statsAfter);
-      if (unlocked.length > 0) {
-        setNewBadges(unlocked);
-        setShowBadgeModal(true);
-      }
-
-      setEarnedStars(stars);
-      setWritePhase('done');
-
-      // Star pop animation
-      Animated.spring(starScale, {
-        toValue: 1,
-        friction: 4,
-        tension: 120,
-        useNativeDriver: true,
-      }).start();
     },
-    [writePhase, wordId, lessonId, markWordLearned, addStars, unlockLesson,
-     addXP, starScale]
+    [writePhase, isMultiChar, charIndex, writeComponents.length, finalizeLesson]
   );
 
-  // ── 下一關（若有）
-  const nextWordId = wordId < ALL_WORDS.length ? wordId + 1 : null;
+  // ── 重新練寫（重置所有狀態） ──────────────────────────────────────
+  const handleReplay = useCallback(() => {
+    setCharIndex(0);
+    accMistakesRef.current = 0;
+    setWritePhase('animating');
+    setEarnedStars(0);
+    starScale.setValue(0);
+    writerRef.current?.replay();
+  }, [starScale]);
+
+  // ── 下一關 ────────────────────────────────────────────────────────
+  // P2 fix: 改用陣列索引尋找，避免非連續 ID（1001, 2001）與 length 比較出錯
+  // 同時確保不會跨內容類型自動跳轉（字元 → 詞語應由地圖頁選擇）
+  const nextWordId = (() => {
+    const idx = ALL_WORDS.findIndex((w) => w.id === wordId);
+    if (idx === -1 || idx + 1 >= ALL_WORDS.length) return null;
+    const curr = ALL_WORDS[idx];
+    const next = ALL_WORDS[idx + 1];
+    const currType = curr.contentType ?? 'character';
+    const nextType = next.contentType ?? 'character';
+    return currType === nextType ? next.id : null;
+  })();
   const handleNextLesson = () => {
     if (nextWordId) {
       navigation.replace('Lesson', { wordId: nextWordId, lessonId: lessonId + 1 });
@@ -160,35 +230,96 @@ export default function LessonScreen({ route, navigation }: any) {
       />
     ));
 
+  // ── 內容類型標籤顏色 ──────────────────────────────────────────────
+  const contentType = word.contentType ?? 'character';
+  const typeColor   = CONTENT_TYPE_COLOR[contentType] ?? Colors.primary;
+  const typeLabel   = CONTENT_TYPE_LABEL[contentType]  ?? '單字';
+
+  // 字義分頁：級別顯示
+  const levelEmoji: Record<string, string> = {
+    seedling:  '🌱幼苗', sapling: '🌳小樹', tree: '🏆大樹',
+    sunflower: '🌻向日葵', rainbow: '🌈彩虹', galaxy: '⭐星河',
+    bamboo:    '🎋竹林', jade: '💎玉龍',
+    vocab:     '📝詞語', idiom: '🏮成語',
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* ── 頂部：大字 + 發音徽章 ── */}
+      {/* ── 頂部：字 + 發音 + 類型徽章 ── */}
       <View style={styles.wordHeader}>
-        <Text style={styles.mainChar}>{word.character}</Text>
-
-        <View style={styles.pronunciationRow}>
-          {/* 粵語發音 */}
-          <TouchableOpacity
-            style={styles.pronBadge}
-            onPress={() => playWord(word.character, 'cantonese')}
-            accessibilityLabel={`粵語發音：${word.jyutping}`}
-          >
-            <Ionicons name="volume-high" size={14} color="#1D4ED8" />
-            <Text style={styles.pronLabel}>粵</Text>
-            <Text style={styles.pronText}>{word.jyutping}</Text>
-          </TouchableOpacity>
-
-          {/* 普通話發音 */}
-          <TouchableOpacity
-            style={[styles.pronBadge, styles.pronBadgeMandarin]}
-            onPress={() => playWord(word.character, 'mandarin')}
-            accessibilityLabel={`普通話發音：${word.pinyin}`}
-          >
-            <Ionicons name="volume-high" size={14} color="#7C3AED" />
-            <Text style={[styles.pronLabel, styles.pronLabelMandarin]}>普</Text>
-            <Text style={styles.pronText}>{word.pinyin}</Text>
-          </TouchableOpacity>
+        {/* 內容類型徽章 */}
+        <View style={[styles.contentTypeBadge, { backgroundColor: typeColor + '1A', borderColor: typeColor + '60' }]}>
+          <Text style={[styles.contentTypeBadgeText, { color: typeColor }]}>{typeLabel}</Text>
         </View>
+
+        {/* 主字顯示 */}
+        <Text style={[styles.mainChar, { fontSize: mainCharFontSize(word.character.length) }]}>
+          {word.character}
+        </Text>
+
+        {/* 發音徽章 */}
+        {isMultiChar ? (
+          /* 多字：顯示各分字拼音 + 整體播放按鈕 */
+          <View style={styles.multiPronContainer}>
+            {/* 各分字 jyutping */}
+            <View style={styles.componentBadgeRow}>
+              {(word.componentJyutping ?? []).map((jp, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={styles.componentBadge}
+                  onPress={() => playWord((word.components ?? [])[i] ?? word.character, 'cantonese')}
+                  accessibilityLabel={`粵語：${jp}`}
+                >
+                  <Text style={styles.componentChar}>{(word.components ?? [])[i]}</Text>
+                  <Text style={styles.componentJyutping}>{jp}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {/* 整體播放 */}
+            <View style={styles.pronunciationRow}>
+              <TouchableOpacity
+                style={styles.pronBadge}
+                onPress={() => playMultiChar('cantonese')}
+                accessibilityLabel={`粵語：${word.jyutping}`}
+              >
+                <Ionicons name="volume-high" size={14} color="#1D4ED8" />
+                <Text style={styles.pronLabel}>粵</Text>
+                <Text style={styles.pronText}>{word.jyutping}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.pronBadge, styles.pronBadgeMandarin]}
+                onPress={() => playMultiChar('mandarin')}
+                accessibilityLabel={`普通話：${word.pinyin}`}
+              >
+                <Ionicons name="volume-high" size={14} color="#7C3AED" />
+                <Text style={[styles.pronLabel, styles.pronLabelMandarin]}>普</Text>
+                <Text style={styles.pronText}>{word.pinyin}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          /* 單字：原有發音徽章 */
+          <View style={styles.pronunciationRow}>
+            <TouchableOpacity
+              style={styles.pronBadge}
+              onPress={() => playWord(word.character, 'cantonese')}
+              accessibilityLabel={`粵語發音：${word.jyutping}`}
+            >
+              <Ionicons name="volume-high" size={14} color="#1D4ED8" />
+              <Text style={styles.pronLabel}>粵</Text>
+              <Text style={styles.pronText}>{word.jyutping}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.pronBadge, styles.pronBadgeMandarin]}
+              onPress={() => playWord(word.character, 'mandarin')}
+              accessibilityLabel={`普通話發音：${word.pinyin}`}
+            >
+              <Ionicons name="volume-high" size={14} color="#7C3AED" />
+              <Text style={[styles.pronLabel, styles.pronLabelMandarin]}>普</Text>
+              <Text style={styles.pronText}>{word.pinyin}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* ── 分頁切換 ── */}
@@ -199,7 +330,7 @@ export default function LessonScreen({ route, navigation }: any) {
           accessibilityLabel="字義分頁"
         >
           <Text style={[styles.tabText, activeTab === 'meaning' && styles.tabTextActive]}>
-            📖 字義
+            {contentType === 'character' ? '📖 字義' : '📖 詞義'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -236,16 +367,28 @@ export default function LessonScreen({ route, navigation }: any) {
                 <Text style={styles.infoValue}>{word.stroke_count} 畫</Text>
               </View>
               <View style={[styles.infoCard, styles.infoCardHalf]}>
-                <Text style={styles.infoLabel}>級別</Text>
-                <Text style={styles.infoValue}>
-                  {{ seedling:'🌱幼苗', sapling:'🌳小樹', tree:'🏆大樹',
-                     sunflower:'🌻向日葵', rainbow:'🌈彩虹', galaxy:'⭐星河' }[word.level]}
-                </Text>
+                <Text style={styles.infoLabel}>種類</Text>
+                <Text style={[styles.infoValue, { color: typeColor }]}>{levelEmoji[word.level] ?? word.level}</Text>
               </View>
             </View>
 
+            {/* 成語額外說明 */}
+            {contentType === 'idiom' && (
+              <View style={[styles.infoCard, styles.idiomNote]}>
+                <Text style={styles.infoLabel}>組成漢字</Text>
+                <View style={styles.idiomCharsRow}>
+                  {(word.components ?? []).map((c, i) => (
+                    <View key={i} style={styles.idiomCharItem}>
+                      <Text style={styles.idiomCharText}>{c}</Text>
+                      <Text style={styles.idiomCharJp}>{(word.componentJyutping ?? [])[i]}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
             <TouchableOpacity
-              style={styles.nextTabBtn}
+              style={[styles.nextTabBtn, { backgroundColor: typeColor }]}
               onPress={() => setActiveTab('write')}
               accessibilityLabel="前往練寫分頁"
             >
@@ -260,27 +403,65 @@ export default function LessonScreen({ route, navigation }: any) {
         ═══════════════════════════════ */}
         {activeTab === 'write' && (
           <View style={styles.writeContainer}>
+            {/* 多字進度指示器 */}
+            {isMultiChar && writePhase !== 'done' && (
+              <View style={styles.charProgressRow}>
+                {writeComponents.map((c, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.charProgressItem,
+                      i === charIndex && styles.charProgressItemActive,
+                      i < charIndex  && styles.charProgressItemDone,
+                    ]}
+                  >
+                    <Text style={[
+                      styles.charProgressText,
+                      i === charIndex && styles.charProgressTextActive,
+                      i < charIndex  && styles.charProgressTextDone,
+                    ]}>
+                      {c}
+                    </Text>
+                    {i < charIndex && (
+                      <Ionicons
+                        name="checkmark"
+                        size={10}
+                        color={Colors.success}
+                        style={styles.charProgressCheck}
+                      />
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+
             {/* 狀態提示文字 */}
             <Text style={styles.writeHint}>
-              {writePhase === 'animating' && '👀 觀看示範筆順…'}
+              {writePhase === 'animating' && (isMultiChar
+                ? `👀 觀看「${currentWriteChar}」示範…`
+                : '👀 觀看示範筆順…')}
               {writePhase === 'ready'     && '✋ 準備好了嗎？'}
-              {writePhase === 'quizzing'  && `✍️ 按筆順寫「${word.character}」`}
-              {writePhase === 'done'      && '🎉 完成！'}
+              {writePhase === 'quizzing'  && `✍️ 按筆順寫「${currentWriteChar}」`}
+              {writePhase === 'done'      && '🎉 全部完成！'}
             </Text>
 
-            {/* HanziWriter 畫布 */}
-            <HanziWriterView
-              ref={writerRef}
-              character={word.character}
-              width={280}
-              height={280}
-              showOutline={true}
-              animateOnLoad={true}
-              onAnimationComplete={handleAnimationComplete}
-              onQuizComplete={handleQuizComplete}
-            />
+            {/* HanziWriter 畫布
+                key 改變 → 強制重新掛載，載入新字 */}
+            {writePhase !== 'done' && (
+              <HanziWriterView
+                key={`${word.id}-char-${charIndex}`}
+                ref={writerRef}
+                character={currentWriteChar}
+                width={280}
+                height={280}
+                showOutline={true}
+                animateOnLoad={true}
+                onAnimationComplete={handleAnimationComplete}
+                onQuizComplete={handleQuizComplete}
+              />
+            )}
 
-            {/* ── 階段：ready → 顯示「開始練寫」 ── */}
+            {/* ── 階段：ready → 開始練寫 ── */}
             {writePhase === 'ready' && (
               <View style={styles.phaseActions}>
                 <TouchableOpacity
@@ -291,9 +472,8 @@ export default function LessonScreen({ route, navigation }: any) {
                   <Ionicons name="refresh" size={18} color={Colors.primary} />
                   <Text style={styles.replayBtnText}>重播示範</Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
-                  style={styles.startQuizBtn}
+                  style={[styles.startQuizBtn, { backgroundColor: typeColor }]}
                   onPress={handleStartQuiz}
                   accessibilityLabel="開始手寫練習"
                 >
@@ -303,11 +483,9 @@ export default function LessonScreen({ route, navigation }: any) {
               </View>
             )}
 
-            {/* ── 階段：quizzing → 顯示重播提示 ── */}
+            {/* ── 階段：quizzing ── */}
             {writePhase === 'quizzing' && (
-              <Text style={styles.quizTip}>
-                按照筆順逐筆描寫，系統自動偵測
-              </Text>
+              <Text style={styles.quizTip}>按照筆順逐筆描寫，系統自動偵測</Text>
             )}
 
             {/* ── 階段：done → 星級結果 ── */}
@@ -326,12 +504,7 @@ export default function LessonScreen({ route, navigation }: any) {
                 <View style={styles.doneButtons}>
                   <TouchableOpacity
                     style={styles.replayQuizBtn}
-                    onPress={() => {
-                      setWritePhase('animating');
-                      setEarnedStars(0);
-                      starScale.setValue(0);
-                      writerRef.current?.replay();
-                    }}
+                    onPress={handleReplay}
                     accessibilityLabel="再練一次"
                   >
                     <Ionicons name="refresh" size={16} color={Colors.primary} />
@@ -364,19 +537,18 @@ export default function LessonScreen({ route, navigation }: any) {
         )}
       </ScrollView>
 
-      {/* 徽章解鎖慶祝彈窗 */}
+      {/* 徽章解鎖彈窗 */}
       <BadgeUnlockModal
         badges={newBadges}
         visible={showBadgeModal}
         onClose={() => {
-          // 若有多個徽章，依次顯示
           const remaining = newBadges.slice(1);
           setNewBadges(remaining);
           setShowBadgeModal(remaining.length > 0);
         }}
       />
 
-      {/* 升級慶祝彈窗 */}
+      {/* 升級彈窗 */}
       <LevelUpModal
         visible={showLevelUp}
         newRank={newRank}
@@ -393,11 +565,19 @@ const styles = StyleSheet.create({
   // 頂部大字
   wordHeader: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     backgroundColor: '#FEF3C7',
-    gap: 10,
+    gap: 8,
   },
-  mainChar: { fontSize: 72, fontWeight: '800', color: '#1F2937', lineHeight: 80 },
+  contentTypeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  contentTypeBadgeText: { fontSize: 11, fontWeight: '700' },
+  mainChar: { fontWeight: '800', color: '#1F2937', lineHeight: undefined },
   pronunciationRow: { flexDirection: 'row', gap: 10 },
   pronBadge: {
     flexDirection: 'row',
@@ -411,7 +591,25 @@ const styles = StyleSheet.create({
   pronBadgeMandarin: { backgroundColor: '#EDE9FE' },
   pronLabel: { fontSize: 11, fontWeight: '700', color: '#1D4ED8' },
   pronLabelMandarin: { color: '#7C3AED' },
-  pronText: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
+  pronText: { fontSize: 13, fontWeight: '600', color: '#1F2937' },
+
+  // 多字拼音展示
+  multiPronContainer: { alignItems: 'center', gap: 8, width: '100%' },
+  componentBadgeRow: { flexDirection: 'row', gap: 10, justifyContent: 'center' },
+  componentBadge: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  componentChar:     { fontSize: 22, fontWeight: '700', color: '#1F2937' },
+  componentJyutping: { fontSize: 12, color: '#1D4ED8', fontWeight: '600' },
 
   // 分頁
   tabRow: {
@@ -444,11 +642,18 @@ const styles = StyleSheet.create({
   infoValue: { fontSize: 20, fontWeight: '700', color: '#1F2937' },
   infoValueEn: { fontSize: 14, color: '#6B7280', marginTop: 2 },
   exampleSentence: { fontSize: 18, color: '#374151', lineHeight: 28 },
+
+  // 成語組成漢字
+  idiomNote: { backgroundColor: '#F5F3FF' },
+  idiomCharsRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
+  idiomCharItem: { alignItems: 'center', gap: 4 },
+  idiomCharText: { fontSize: 24, fontWeight: '700', color: '#4C1D95' },
+  idiomCharJp:   { fontSize: 12, color: '#7C3AED', fontWeight: '600' },
+
   nextTabBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F59E0B',
     paddingVertical: 14,
     borderRadius: 14,
     gap: 8,
@@ -458,17 +663,46 @@ const styles = StyleSheet.create({
 
   // 練寫分頁
   writeContainer: { alignItems: 'center', gap: 16 },
-  writeHint: {
-    fontSize: 16,
-    color: '#374151',
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  phaseActions: {
+
+  // 多字進度指示器
+  charProgressRow: {
     flexDirection: 'row',
     gap: 12,
-    width: '100%',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
+  charProgressItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+  },
+  charProgressItemActive: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
+  },
+  charProgressItemDone: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#6EE7B7',
+  },
+  charProgressText:       { fontSize: 18, fontWeight: '600', color: '#9CA3AF' },
+  charProgressTextActive: { color: '#92400E' },
+  charProgressTextDone:   { color: '#065F46' },
+  charProgressCheck:      { position: 'absolute', bottom: 2, right: 2 },
+
+  writeHint: { fontSize: 16, color: '#374151', fontWeight: '500', textAlign: 'center' },
+  phaseActions: { flexDirection: 'row', gap: 12, width: '100%' },
   replayBtn: {
     flex: 1,
     flexDirection: 'row',
@@ -487,18 +721,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F59E0B',
     paddingVertical: 14,
     borderRadius: 14,
     gap: 8,
   },
   startQuizBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  quizTip: {
-    fontSize: 13,
-    color: '#6B7280',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
+  quizTip: { fontSize: 13, color: '#6B7280', textAlign: 'center', fontStyle: 'italic' },
 
   // 完成結果
   completeBox: {

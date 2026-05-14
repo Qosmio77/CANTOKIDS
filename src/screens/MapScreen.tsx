@@ -19,12 +19,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useProgressStore, BOSSES } from '../store/useProgressStore';
 import { Colors } from '../theme/colors';
+import { useTranslation } from '../hooks/useTranslation';
 import { FREE_LESSON_LIMIT } from '../services/iap/iapService';
 import { Word } from '../types/word';
 import {
   SEEDLING_WORDS, SAPLING_WORDS, TREE_WORDS,
   SUNFLOWER_WORDS, RAINBOW_WORDS, GALAXY_WORDS,
   BAMBOO_WORDS, JADE_WORDS, ALL_WORDS,
+  VOCAB_WORDS, IDIOM_WORDS,
+  VOCAB_UNLOCK_THRESHOLD, IDIOM_UNLOCK_THRESHOLD,
+  FIRST_VOCAB_LESSON_ID, FIRST_IDIOM_LESSON_ID,
 } from '../data/allWords';
 
 interface LevelSectionProps {
@@ -44,6 +48,7 @@ function LevelSection({
   label, words, lessonOffset, isPremium, unlockedLessons, wordProgress,
   bossesDefeated, navigation, forceAllPremium = false, bossId,
 }: LevelSectionProps) {
+  const { t } = useTranslation();
   // 判斷此 level 是否全部學完 → 解鎖 Boss
   const levelComplete = isPremium
     ? words.every((w) => wordProgress[w.id]?.learned)
@@ -59,7 +64,7 @@ function LevelSection({
     <View style={styles.levelSection}>
       <View style={styles.levelHeader}>
         <Text style={styles.levelBadge}>{label}</Text>
-        <Text style={styles.levelCount}>{words.length} 個漢字</Text>
+        <Text style={styles.levelCount}>{t('levelWords', { n: words.length })}</Text>
       </View>
       <View style={styles.grid}>
         {words.map((word, index) => {
@@ -146,16 +151,114 @@ function LevelSection({
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MultiCharSection — 詞語 / 成語通用關卡列表（無 Boss）
+// ─────────────────────────────────────────────────────────────────────────────
+interface MultiCharSectionProps {
+  label: string;
+  words: Word[];
+  firstLessonId: number;   // e.g. 1001 for vocab, 2001 for idioms
+  isPremium: boolean;
+  unlockedLessons: number[];
+  wordProgress: Record<number, any>;
+  navigation: any;
+  accentColor: string;
+  accentBg: string;
+}
+
+function MultiCharSection({
+  label, words, firstLessonId, isPremium,
+  unlockedLessons, wordProgress, navigation,
+  accentColor, accentBg,
+}: MultiCharSectionProps) {
+  const { t } = useTranslation();
+
+  return (
+    <View style={styles.levelSection}>
+      <View style={styles.levelHeader}>
+        <Text style={[styles.levelBadge, { color: accentColor }]}>{label}</Text>
+        <Text style={styles.levelCount}>{words.length} 個</Text>
+      </View>
+      <View style={styles.grid}>
+        {words.map((word, index) => {
+          const lessonId = firstLessonId + index;
+          const isUnlocked = unlockedLessons.includes(lessonId) || lessonId === firstLessonId;
+          const isLearned  = wordProgress[word.id]?.learned ?? false;
+
+          return (
+            <TouchableOpacity
+              key={word.id}
+              style={[
+                styles.lessonNode,
+                styles.multiCharNode,
+                { borderColor: accentColor + '60' },
+                isLearned  && styles.lessonNodeDone,
+                !isUnlocked && styles.lessonNodeLocked,
+              ]}
+              onPress={() => {
+                if (isUnlocked) {
+                  navigation.navigate('Lesson', { wordId: word.id, lessonId });
+                }
+              }}
+              accessibilityLabel={`${word.character}：${word.meaning_zh}`}
+            >
+              {isLearned ? (
+                <Ionicons name="checkmark-circle" size={22} color={Colors.success} />
+              ) : isUnlocked ? (
+                <Text style={[styles.multiCharNodeText, { color: accentColor }]}>
+                  {word.character}
+                </Text>
+              ) : (
+                <Ionicons name="lock-closed" size={18} color={Colors.textMuted} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LockedGate — 尚未達門檻時顯示的鎖定橫幅
+// ─────────────────────────────────────────────────────────────────────────────
+function LockedGate({
+  icon, label, hint, accentColor,
+}: { icon: string; label: string; hint: string; accentColor: string }) {
+  return (
+    <View style={[styles.lockedGate, { borderColor: accentColor + '40' }]}>
+      <Text style={styles.lockedGateIcon}>{icon}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.lockedGateLabel, { color: accentColor }]}>{label}</Text>
+        <Text style={styles.lockedGateHint}>{hint}</Text>
+      </View>
+      <Ionicons name="lock-closed" size={18} color={accentColor} />
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MapScreen
+// ─────────────────────────────────────────────────────────────────────────────
 export default function MapScreen({ navigation }: any) {
   const { unlockedLessons, wordProgress, isPremium, bossesDefeated } = useProgressStore();
+  const { t } = useTranslation();
+
+  // ── 解鎖門檻計算 ────────────────────────────────────────────────
+  const learnedCharCount  = ALL_WORDS.filter(
+    (w) => (!w.contentType || w.contentType === 'character') && wordProgress[w.id]?.learned,
+  ).length;
+  const learnedVocabCount = VOCAB_WORDS.filter((w) => wordProgress[w.id]?.learned).length;
+  const vocabUnlocked     = isPremium && learnedCharCount  >= VOCAB_UNLOCK_THRESHOLD;
+  const idiomUnlocked     = isPremium && learnedVocabCount >= IDIOM_UNLOCK_THRESHOLD;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* 標題欄 + 家長入口 */}
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.title}>🗺️ 學習地圖</Text>
-          <Text style={styles.subtitle}>共 {ALL_WORDS.length} 個漢字 · 8 個級別</Text>
+          <Text style={styles.title}>{t('learningMap')}</Text>
+          <Text style={styles.subtitle}>{t('mapSubtitle')}</Text>
         </View>
         <TouchableOpacity
           style={styles.parentBtn}
@@ -176,7 +279,7 @@ export default function MapScreen({ navigation }: any) {
         >
           <Ionicons name="diamond" size={16} color={Colors.white} />
           <Text style={styles.upgradeBannerText}>
-            升級解鎖全部 {ALL_WORDS.length} 個漢字 — 前 {FREE_LESSON_LIMIT} 課免費
+            {t('unlockBanner')}
           </Text>
           <Ionicons name="chevron-forward" size={14} color={Colors.white} />
         </TouchableOpacity>
@@ -185,7 +288,7 @@ export default function MapScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.container}>
         {/* 幼苗級 */}
         <LevelSection
-          label="🌱 幼苗級"
+          label={t('levelSeedling')}
           words={SEEDLING_WORDS}
           lessonOffset={0}
           isPremium={isPremium}
@@ -198,7 +301,7 @@ export default function MapScreen({ navigation }: any) {
 
         {/* 小樹級（全部需要 premium） */}
         <LevelSection
-          label="🌳 小樹級"
+          label={t('levelSapling')}
           words={SAPLING_WORDS}
           lessonOffset={SEEDLING_WORDS.length}
           isPremium={isPremium}
@@ -212,7 +315,7 @@ export default function MapScreen({ navigation }: any) {
 
         {/* 大樹級 */}
         <LevelSection
-          label="🏆 大樹級"
+          label={t('levelTree')}
           words={TREE_WORDS}
           lessonOffset={SEEDLING_WORDS.length + SAPLING_WORDS.length}
           isPremium={isPremium}
@@ -226,7 +329,7 @@ export default function MapScreen({ navigation }: any) {
 
         {/* 向日葵級 */}
         <LevelSection
-          label="🌻 向日葵級"
+          label={t('levelSunflower')}
           words={SUNFLOWER_WORDS}
           lessonOffset={SEEDLING_WORDS.length + SAPLING_WORDS.length + TREE_WORDS.length}
           isPremium={isPremium}
@@ -240,7 +343,7 @@ export default function MapScreen({ navigation }: any) {
 
         {/* 彩虹級 */}
         <LevelSection
-          label="🌈 彩虹級"
+          label={t('levelRainbow')}
           words={RAINBOW_WORDS}
           lessonOffset={SEEDLING_WORDS.length + SAPLING_WORDS.length + TREE_WORDS.length + SUNFLOWER_WORDS.length}
           isPremium={isPremium}
@@ -254,7 +357,7 @@ export default function MapScreen({ navigation }: any) {
 
         {/* 星河級 */}
         <LevelSection
-          label="⭐ 星河級"
+          label={t('levelGalaxy')}
           words={GALAXY_WORDS}
           lessonOffset={SEEDLING_WORDS.length + SAPLING_WORDS.length + TREE_WORDS.length + SUNFLOWER_WORDS.length + RAINBOW_WORDS.length}
           isPremium={isPremium}
@@ -268,7 +371,7 @@ export default function MapScreen({ navigation }: any) {
 
         {/* 竹林級 */}
         <LevelSection
-          label="🎋 竹林級"
+          label={t('levelBamboo')}
           words={BAMBOO_WORDS}
           lessonOffset={SEEDLING_WORDS.length + SAPLING_WORDS.length + TREE_WORDS.length + SUNFLOWER_WORDS.length + RAINBOW_WORDS.length + GALAXY_WORDS.length}
           isPremium={isPremium}
@@ -282,7 +385,7 @@ export default function MapScreen({ navigation }: any) {
 
         {/* 玉龍級 */}
         <LevelSection
-          label="💎 玉龍級"
+          label={t('levelJade')}
           words={JADE_WORDS}
           lessonOffset={SEEDLING_WORDS.length + SAPLING_WORDS.length + TREE_WORDS.length + SUNFLOWER_WORDS.length + RAINBOW_WORDS.length + GALAXY_WORDS.length + BAMBOO_WORDS.length}
           isPremium={isPremium}
@@ -293,6 +396,68 @@ export default function MapScreen({ navigation }: any) {
           forceAllPremium
           bossId="boss_jade"
         />
+
+        {/* ── 詞語關卡 ── */}
+        {isPremium ? (
+          vocabUnlocked ? (
+            <MultiCharSection
+              label={t('levelVocab')}
+              words={VOCAB_WORDS}
+              firstLessonId={FIRST_VOCAB_LESSON_ID}
+              isPremium={isPremium}
+              unlockedLessons={unlockedLessons}
+              wordProgress={wordProgress}
+              navigation={navigation}
+              accentColor="#059669"
+              accentBg="#ECFDF5"
+            />
+          ) : (
+            <LockedGate
+              icon="📝"
+              label={t('levelVocab')}
+              hint={t('vocabLocked', { n: VOCAB_UNLOCK_THRESHOLD })}
+              accentColor="#059669"
+            />
+          )
+        ) : (
+          <LockedGate
+            icon="📝"
+            label={t('levelVocab')}
+            hint="升級高級版後解鎖詞語關卡"
+            accentColor="#059669"
+          />
+        )}
+
+        {/* ── 成語關卡 ── */}
+        {isPremium ? (
+          idiomUnlocked ? (
+            <MultiCharSection
+              label={t('levelIdiom')}
+              words={IDIOM_WORDS}
+              firstLessonId={FIRST_IDIOM_LESSON_ID}
+              isPremium={isPremium}
+              unlockedLessons={unlockedLessons}
+              wordProgress={wordProgress}
+              navigation={navigation}
+              accentColor="#7C3AED"
+              accentBg="#F5F3FF"
+            />
+          ) : (
+            <LockedGate
+              icon="🏮"
+              label={t('levelIdiom')}
+              hint={t('idiomLocked', { n: IDIOM_UNLOCK_THRESHOLD })}
+              accentColor="#7C3AED"
+            />
+          )
+        ) : (
+          <LockedGate
+            icon="🏮"
+            label={t('levelIdiom')}
+            hint="升級高級版後解鎖成語關卡"
+            accentColor="#7C3AED"
+          />
+        )}
 
         {/* 底部說明 */}
         {!isPremium && (
@@ -385,6 +550,35 @@ const styles = StyleSheet.create({
   legend: { marginTop: 24, gap: 6 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendText: { fontSize: 12, color: Colors.textSecondary },
+
+  // 多字節點（詞語/成語）— 比單字節點略寬以容納多字
+  multiCharNode: {
+    width: '45%',
+    aspectRatio: undefined,
+    height: 56,
+    paddingHorizontal: 6,
+  },
+  multiCharNodeText: {
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+
+  // 鎖定閘門橫幅
+  lockedGate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    padding: 14,
+    marginBottom: 4,
+    opacity: 0.85,
+  },
+  lockedGateIcon:  { fontSize: 24 },
+  lockedGateLabel: { fontSize: 14, fontWeight: '700' },
+  lockedGateHint:  { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
 
   // Boss 戰入口
   bossBtn: {

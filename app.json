@@ -63,6 +63,12 @@
         "projectId": "0f99add3-2b7e-48b0-8fe6-a6ead6e9f0d5"
       }
     },
-    "owner": "qosmio77"
+    "owner": "qosmio77",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0f99add3-2b7e-48b0-8fe6-a6ead6e9f0d5"
+    }
   }
 }

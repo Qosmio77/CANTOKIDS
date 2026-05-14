@@ -14,7 +14,8 @@ import { useAudio } from '../../hooks/useAudio';
 import { useProgressStore } from '../../store/useProgressStore';
 import {
   SEEDLING_WORDS, SAPLING_WORDS, TREE_WORDS,
-  SUNFLOWER_WORDS, RAINBOW_WORDS, GALAXY_WORDS, ALL_WORDS,
+  SUNFLOWER_WORDS, RAINBOW_WORDS, GALAXY_WORDS, ALL_WORDS, ALL_CHARACTER_WORDS,
+  VOCAB_WORDS, IDIOM_WORDS,
   SEEDLING_IDS, SAPLING_IDS, TREE_IDS,
   SUNFLOWER_IDS, RAINBOW_IDS, GALAXY_IDS,
 } from '../../data/allWords';
@@ -33,7 +34,9 @@ function getWordPool(level: QuizLevel): Word[] {
     case 'sunflower': return SUNFLOWER_WORDS;
     case 'rainbow':   return RAINBOW_WORDS;
     case 'galaxy':    return GALAXY_WORDS;
-    case 'all':       return ALL_WORDS;
+    case 'vocab':     return VOCAB_WORDS;
+    case 'idiom':     return IDIOM_WORDS;
+    case 'all':       return ALL_WORDS.filter((w) => !w.contentType || w.contentType === 'character');
     default:          return SEEDLING_WORDS;
   }
 }
@@ -80,9 +83,10 @@ function generateStandardQuestions(quizType: QuizType, level: QuizLevel): QuizQu
  * 當 level !== 'all'：強制使用全部 60 字，確保有足夠的跨級別差異。
  */
 function generateFindWrongQuestions(): QuizQuestion[] {
+  // P2 fix: 改用 ALL_CHARACTER_WORDS，避免詞語/成語混入「找錯字」測驗
   // 按 level 分組
   const groups: Record<string, Word[]> = {};
-  for (const w of ALL_WORDS) {
+  for (const w of ALL_CHARACTER_WORDS) {
     if (!groups[w.level]) groups[w.level] = [];
     groups[w.level].push(w);
   }
@@ -138,7 +142,7 @@ export default function QuizScreen({ route, navigation }: any) {
 
   // Phase 4: 驗證 quizLevel
   const RAW_LEVEL = route?.params?.quizLevel;
-  const VALID_LEVELS: QuizLevel[] = ['seedling', 'sapling', 'tree', 'sunflower', 'rainbow', 'galaxy', 'all'];
+  const VALID_LEVELS: QuizLevel[] = ['seedling', 'sapling', 'tree', 'sunflower', 'rainbow', 'galaxy', 'vocab', 'idiom', 'all'];
   const quizLevel: QuizLevel = VALID_LEVELS.includes(RAW_LEVEL) ? RAW_LEVEL : 'seedling';
 
   const { playWord } = useAudio();

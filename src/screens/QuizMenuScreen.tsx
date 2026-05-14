@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { useProgressStore } from '../store/useProgressStore';
 
-export type QuizLevel = 'seedling' | 'sapling' | 'tree' | 'sunflower' | 'rainbow' | 'galaxy' | 'all';
+export type QuizLevel = 'seedling' | 'sapling' | 'tree' | 'sunflower' | 'rainbow' | 'galaxy' | 'vocab' | 'idiom' | 'all';
 export type QuizType = 'listenPick' | 'readPick' | 'findWrong';
 
 interface QuizMode {
@@ -72,6 +72,8 @@ const LEVEL_OPTIONS: LevelOption[] = [
   { level: 'sunflower', emoji: '🌻', label: '向日葵', requiresPremium: true  },
   { level: 'rainbow',   emoji: '🌈', label: '彩虹',   requiresPremium: true  },
   { level: 'galaxy',    emoji: '⭐', label: '星河',   requiresPremium: true  },
+  { level: 'vocab',     emoji: '📝', label: '詞語',   requiresPremium: true  },
+  { level: 'idiom',     emoji: '🏮', label: '成語',   requiresPremium: true  },
   { level: 'all',       emoji: '🌍', label: '全部混',  requiresPremium: true  },
 ];
 

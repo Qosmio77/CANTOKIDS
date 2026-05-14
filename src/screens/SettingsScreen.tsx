@@ -24,11 +24,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { useProgressStore } from '../store/useProgressStore';
+import { useTranslation } from '../hooks/useTranslation';
 
 const APP_VERSION = '1.0.0';
 
 export default function SettingsScreen({ navigation }: any) {
-  const { displayName, setUser, userId } = useProgressStore();
+  const { displayName, setUser, userId, language, setLanguage } = useProgressStore();
+  const { t } = useTranslation();
 
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(displayName);
@@ -36,8 +38,8 @@ export default function SettingsScreen({ navigation }: any) {
 
   const handleSaveName = () => {
     const trimmed = nameInput.trim();
-    if (!trimmed) { setNameError('名字不能為空'); return; }
-    if (trimmed.length > 10) { setNameError('名字最多 10 個字'); return; }
+    if (!trimmed) { setNameError(t('nameEmpty')); return; }
+    if (trimmed.length > 10) { setNameError(t('nameTooLong')); return; }
     setUser(userId ?? 'local-user', trimmed);
     setEditingName(false);
     setNameError('');
@@ -45,12 +47,12 @@ export default function SettingsScreen({ navigation }: any) {
 
   const handleReplayOnboarding = () => {
     Alert.alert(
-      '重播引導',
-      '確定要重新觀看首次使用引導？',
+      t('replayConfirmTitle'),
+      t('replayConfirmMsg'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: '確定',
+          text: t('confirm'),
           onPress: () => {
             // 清除 onboardingDone，下次重啟會重播
             useProgressStore.setState({ onboardingDone: false });
@@ -68,29 +70,29 @@ export default function SettingsScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>設定</Text>
+        <Text style={styles.topTitle}>{t('settings')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* 個人資料 */}
-        <SectionHeader title="👧 個人資料" />
+        <SectionHeader title={t('sectionProfile')} />
         <View style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>小朋友名稱</Text>
+            <Text style={styles.rowLabel}>{t('childName')}</Text>
             {editingName ? (
               <View style={styles.editRow}>
                 <TextInput
                   style={[styles.nameInput, nameError ? styles.nameInputError : null]}
                   value={nameInput}
-                  onChangeText={(t) => { setNameInput(t); setNameError(''); }}
+                  onChangeText={(v) => { setNameInput(v); setNameError(''); }}
                   maxLength={10}
                   autoFocus
                   returnKeyType="done"
                   onSubmitEditing={handleSaveName}
                 />
                 <TouchableOpacity style={styles.saveBtn} onPress={handleSaveName}>
-                  <Text style={styles.saveBtnText}>儲存</Text>
+                  <Text style={styles.saveBtnText}>{t('save')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.cancelBtn}
@@ -112,62 +114,89 @@ export default function SettingsScreen({ navigation }: any) {
           {!!nameError && <Text style={styles.errorText}>{nameError}</Text>}
         </View>
 
+        {/* 介面語言 */}
+        <SectionHeader title={t('sectionLanguage')} />
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.langRow}
+            onPress={() => setLanguage('zh')}
+          >
+            <Text style={styles.langLabel}>{t('languageZh')}</Text>
+            {language === 'zh'
+              ? <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />
+              : <Ionicons name="ellipse-outline" size={22} color={Colors.textMuted} />
+            }
+          </TouchableOpacity>
+          <Divider />
+          <TouchableOpacity
+            style={styles.langRow}
+            onPress={() => setLanguage('en')}
+          >
+            <Text style={styles.langLabel}>{t('languageEn')}</Text>
+            {language === 'en'
+              ? <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />
+              : <Ionicons name="ellipse-outline" size={22} color={Colors.textMuted} />
+            }
+          </TouchableOpacity>
+        </View>
+
         {/* 網頁版 */}
-        <SectionHeader title="🌐 網頁版" />
+        <SectionHeader title={t('sectionWeb')} />
         <View style={styles.card}>
           <SettingRow
             icon="qr-code-outline"
-            label="掃描登入網頁版"
+            label={t('scanQrLogin')}
             onPress={() => navigation.navigate('QRScan')}
           />
           <Divider />
           <View style={styles.webHintRow}>
             <Text style={styles.webHintText}>
-              在電腦瀏覽器開啟{' '}
-              <Text style={styles.webHintUrl}>cantokids.app</Text>
-              {'\n'}然後用手機掃描 QR Code 即可同步學習進度
+              {language === 'en'
+                ? <>Open <Text style={styles.webHintUrl}>cantokids.app</Text>{'\n'}then scan the QR code to sync progress</>
+                : <>在電腦瀏覽器開啟 <Text style={styles.webHintUrl}>cantokids.app</Text>{'\n'}然後用手機掃描 QR Code 即可同步學習進度</>
+              }
             </Text>
           </View>
         </View>
 
         {/* 應用程式 */}
-        <SectionHeader title="⚙️ 應用程式" />
+        <SectionHeader title={t('sectionApp')} />
         <View style={styles.card}>
           <SettingRow
             icon="refresh-circle-outline"
-            label="重新播放引導教學"
+            label={t('replayTutorial')}
             onPress={handleReplayOnboarding}
           />
           <Divider />
           <SettingRow
             icon="shield-checkmark-outline"
-            label="私隱政策"
-            onPress={() => Alert.alert('私隱政策', 'CantoKids 不收集任何兒童個人資料。\n學習進度僅儲存在本機裝置。\n\n符合 COPPA 規範。')}
+            label={t('privacyPolicy')}
+            onPress={() => Alert.alert(t('privacyPolicy'), t('privacyMsg'))}
           />
           <Divider />
           <SettingRow
             icon="mail-outline"
-            label="聯絡支援"
-            onPress={() => Alert.alert('聯絡支援', '請電郵至 support@cantokids.app\n\n我們會於 2 個工作天內回覆。')}
+            label={t('contactSupport')}
+            onPress={() => Alert.alert(t('contactSupport'), t('supportMsg'))}
           />
         </View>
 
         {/* 版本資訊 */}
-        <SectionHeader title="ℹ️ 關於" />
+        <SectionHeader title={t('sectionAbout')} />
         <View style={styles.card}>
           <View style={styles.aboutRow}>
-            <Text style={styles.aboutLabel}>版本</Text>
+            <Text style={styles.aboutLabel}>{t('aboutVersion')}</Text>
             <Text style={styles.aboutValue}>{APP_VERSION}</Text>
           </View>
           <Divider />
           <View style={styles.aboutRow}>
-            <Text style={styles.aboutLabel}>詞庫</Text>
-            <Text style={styles.aboutValue}>60 個漢字 · 6 個級別</Text>
+            <Text style={styles.aboutLabel}>{t('aboutDictionary')}</Text>
+            <Text style={styles.aboutValue}>{t('aboutDictionaryValue')}</Text>
           </View>
           <Divider />
           <View style={styles.aboutRow}>
-            <Text style={styles.aboutLabel}>製作</Text>
-            <Text style={styles.aboutValue}>CantoKids Team 🌱</Text>
+            <Text style={styles.aboutLabel}>{t('aboutMadeBy')}</Text>
+            <Text style={styles.aboutValue}>{t('aboutMadeByValue')}</Text>
           </View>
         </View>
 
@@ -177,7 +206,7 @@ export default function SettingsScreen({ navigation }: any) {
           onPress={() => navigation.navigate('ParentLogin')}
         >
           <Ionicons name="people" size={20} color={Colors.white} />
-          <Text style={styles.parentBtnText}>進入家長控制台</Text>
+          <Text style={styles.parentBtnText}>{t('parentDashboard')}</Text>
           <Ionicons name="chevron-forward" size={16} color={Colors.white} />
         </TouchableOpacity>
       </ScrollView>
@@ -279,6 +308,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
+  langRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  langLabel: { fontSize: 15, color: Colors.text },
   settingLabel: { flex: 1, fontSize: 15, color: Colors.text },
   aboutRow: {
     flexDirection: 'row',

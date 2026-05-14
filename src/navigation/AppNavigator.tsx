@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { useProgressStore } from '../store/useProgressStore';
+import { useTranslation } from '../hooks/useTranslation';
 
 import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/MapScreen';
@@ -78,6 +79,8 @@ const Tab = createBottomTabNavigator<TabParamList>();
 
 // 底部導航頁籤
 function MainTabs() {
+  const { t } = useTranslation();   // re-renders when language changes ✓
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -85,11 +88,13 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: Colors.primaryBg,
           borderTopColor: Colors.primaryLight,
-          height: 60,
-          paddingBottom: 8,
+          height: 64,
+          paddingBottom: 10,
+          paddingTop: 4,
         },
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap;
           if (route.name === 'Home') {
@@ -102,8 +107,8 @@ function MainTabs() {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarLabel:
-          route.name === 'Home' ? '首頁' :
-          route.name === 'Map' ? '地圖' : '測驗',
+          route.name === 'Home' ? t('tabHome') :
+          route.name === 'Map'  ? t('tabMap')  : t('tabQuiz'),
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
@@ -115,8 +120,8 @@ function MainTabs() {
 
 // 主導航容器
 export default function AppNavigator() {
-  // Phase 4: 根據 onboardingDone 決定初始路由
   const onboardingDone = useProgressStore((s) => s.onboardingDone);
+  const { t } = useTranslation();   // re-renders when language changes ✓
 
   return (
     // ParentAuthProvider 包裹整個導航，讓所有頁面都能存取家長驗證狀態
@@ -135,7 +140,7 @@ export default function AppNavigator() {
             component={LessonScreen}
             options={{
               headerShown: true,
-              headerTitle: '學習課室',
+              headerTitle: t('lessonClassroom'),
               headerStyle: { backgroundColor: Colors.primaryBg },
               headerTintColor: Colors.primary,
             }}
@@ -145,7 +150,7 @@ export default function AppNavigator() {
             component={QuizMenuScreen}
             options={{
               headerShown: true,
-              headerTitle: '互動測驗',
+              headerTitle: t('interactiveTest'),
               headerStyle: { backgroundColor: Colors.primaryBg },
               headerTintColor: Colors.primary,
             }}
@@ -155,7 +160,7 @@ export default function AppNavigator() {
             component={QuizScreen}
             options={{
               headerShown: true,
-              headerTitle: '🎮 測驗',
+              headerTitle: t('interactiveTest'),
               headerStyle: { backgroundColor: Colors.primaryBg },
               headerTintColor: Colors.primary,
             }}
@@ -177,7 +182,7 @@ export default function AppNavigator() {
             component={QRScanScreen}
             options={{
               headerShown: true,
-              headerTitle: '掃描登入網頁版',
+              headerTitle: t('scanQrLogin'),
               headerStyle: { backgroundColor: Colors.primaryBg },
               headerTintColor: Colors.primary,
             }}

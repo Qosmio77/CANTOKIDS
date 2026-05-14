@@ -6,21 +6,27 @@ import { Treasure } from '../data/treasures';
 // ── 玩家等級定義 ────────────────────────────────────────────────────
 export interface PlayerRank {
   level: number;
-  name: string;
+  name: string;      // 繁體中文名稱
+  name_en: string;   // English name
   emoji: string;
-  xpRequired: number;   // 升到此等級所需累積 XP
+  xpRequired: number;
 }
 
 export const PLAYER_RANKS: PlayerRank[] = [
-  { level: 1, name: '蛋蛋',   emoji: '🥚', xpRequired: 0    },
-  { level: 2, name: '小雞',   emoji: '🐣', xpRequired: 100  },
-  { level: 3, name: '黃雀',   emoji: '🐤', xpRequired: 250  },
-  { level: 4, name: '小鷹',   emoji: '🦅', xpRequired: 500  },
-  { level: 5, name: '幼獅',   emoji: '🦁', xpRequired: 800  },
-  { level: 6, name: '小龍',   emoji: '🐉', xpRequired: 1200 },
-  { level: 7, name: '星靈',   emoji: '🌟', xpRequired: 1800 },
-  { level: 8, name: '傳說',   emoji: '👑', xpRequired: 2500 },
+  { level: 1, name: '蛋蛋', name_en: 'Egg',        emoji: '🥚', xpRequired: 0    },
+  { level: 2, name: '小雞', name_en: 'Chick',      emoji: '🐣', xpRequired: 100  },
+  { level: 3, name: '黃雀', name_en: 'Sparrow',    emoji: '🐤', xpRequired: 250  },
+  { level: 4, name: '小鷹', name_en: 'Eagle',      emoji: '🦅', xpRequired: 500  },
+  { level: 5, name: '幼獅', name_en: 'Lion Cub',   emoji: '🦁', xpRequired: 800  },
+  { level: 6, name: '小龍', name_en: 'Dragon',     emoji: '🐉', xpRequired: 1200 },
+  { level: 7, name: '星靈', name_en: 'Star Spirit', emoji: '🌟', xpRequired: 1800 },
+  { level: 8, name: '傳說', name_en: 'Legend',     emoji: '👑', xpRequired: 2500 },
 ];
+
+/** 根據語言回傳正確的等級名稱 */
+export function getRankName(rank: PlayerRank, language: 'zh' | 'en'): string {
+  return language === 'en' ? rank.name_en : rank.name;
+}
 
 export const XP_PER_WORD_LEARNED  = 15;          // 學會新字
 export const XP_PER_QUIZ_CORRECT  = 5;           // 測驗答對
@@ -102,6 +108,9 @@ interface ProgressState {
   // Phase 7: 寶物系統
   treasures: Record<string, number>; // treasureId → 擁有數量
 
+  // i18n
+  language: 'zh' | 'en';
+
   // ── Actions ──
   setUser: (id: string, name: string) => void;
   markWordLearned: (wordId: number) => void;
@@ -124,6 +133,8 @@ interface ProgressState {
   defeatBoss: (bossId: string) => void;
   /** 新增寶物到庫存 */
   addTreasures: (newTreasures: Treasure[]) => void;
+  /** 切換介面語言 */
+  setLanguage: (lang: 'zh' | 'en') => void;
 }
 
 // ── 時間工具 ─────────────────────────────────────────────────────────
@@ -159,6 +170,8 @@ export const useProgressStore = create<ProgressState>()(
       bossesDefeated: [],
       // Phase 7 初始值
       treasures: {},
+      // i18n 初始值
+      language: 'zh' as const,
 
       setUser: (id, name) => set({ userId: id, displayName: name }),
 
@@ -275,6 +288,8 @@ export const useProgressStore = create<ProgressState>()(
           }
           return { treasures: updated };
         }),
+
+      setLanguage: (lang) => set({ language: lang }),
     }),
     {
       name: 'cantokids-progress',
@@ -299,6 +314,8 @@ export const useProgressStore = create<ProgressState>()(
         bossesDefeated: state.bossesDefeated,
         // Phase 7
         treasures: state.treasures,
+        // i18n
+        language: state.language,
       }),
     }
   )
