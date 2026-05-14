@@ -88,6 +88,8 @@ export default function LessonScreen({ route, navigation }: any) {
   // Star pop animation
   const starScale = useRef(new Animated.Value(0)).current;
   const writerRef = useRef<HanziWriterHandle>(null);
+  // 練寫嘗試次數：第 1 次保留筆順數字，第 2 次起清除
+  const quizAttemptRef = useRef(0);
 
   const {
     markWordLearned, addStars, unlockLesson,
@@ -113,13 +115,19 @@ export default function LessonScreen({ route, navigation }: any) {
 
   // ── 動畫結束 → 顯示「開始練寫」 ─────────────────────────────────
   const handleAnimationComplete = useCallback(() => {
+    quizAttemptRef.current = 0;   // 每次動畫完成後重置嘗試計數
     setWritePhase('ready');
   }, []);
 
   // ── 開始練寫 ─────────────────────────────────────────────────────
   const handleStartQuiz = useCallback(() => {
+    quizAttemptRef.current += 1;
     setWritePhase('quizzing');
-    writerRef.current?.startQuiz();
+    if (quizAttemptRef.current === 1) {
+      writerRef.current?.startQuiz();           // 第一次：筆順數字保留
+    } else {
+      writerRef.current?.startQuizNoNumbers();  // 第二次起：清除數字憑記憶練寫
+    }
   }, []);
 
   // ── 完成整個課程 ──────────────────────────────────────────────────
@@ -194,6 +202,7 @@ export default function LessonScreen({ route, navigation }: any) {
   const handleReplay = useCallback(() => {
     setCharIndex(0);
     accMistakesRef.current = 0;
+    quizAttemptRef.current = 0;   // 重播時重置，讓第一次練寫再次顯示數字
     setWritePhase('animating');
     setEarnedStars(0);
     starScale.setValue(0);

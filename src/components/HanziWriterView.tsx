@@ -14,20 +14,21 @@ interface HanziWriterViewProps {
 
 /** 父元件可透過 ref 呼叫的方法 */
 export interface HanziWriterHandle {
-  /** 開始手寫測驗模式（描完所有筆順後觸發 onQuizComplete） */
+  /** 開始手寫測驗（第一次：數字仍可見） */
   startQuiz: () => void;
-  /** 重新播放示範動畫 */
+  /** 開始手寫測驗（第二次以上：先清除數字） */
+  startQuizNoNumbers: () => void;
+  /** 重新播放示範動畫（逐筆＋數字重新出現） */
   replay: () => void;
 }
 
 /**
  * HanziWriterView — 透過 WebView 整合 HanziWriter.js
  *
- * 修復 #2  : 分離 animationComplete 與 quizComplete
- * 修復 #5  : CDN 失敗時顯示離線提示
- * 修復 #6  : window.addEventListener（Android 相容）
- * 修復 #8  : Loader spinner 置中
- * Phase 5  : forwardRef + useImperativeHandle 暴露 startQuiz / replay
+ * Phase 6 筆順數字功能：
+ *   • 動畫模式：逐筆播放，每筆完成後出現一個琥珀圓形數字徽章
+ *   • 第一次練寫（startQuiz）：數字徽章保留，作為引導
+ *   • 第二次練寫（startQuizNoNumbers）：清除數字，憑記憶練寫
  */
 const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
   (
@@ -43,11 +44,8 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
     ref
   ) => {
     const webViewRef = useRef<WebView>(null);
-
-    // 安全編碼：只允許單一漢字，防止 JS 注入
     const safeCharacter = character.length === 1 ? character : '字';
 
-    /** 向 WebView 發送 postMessage 動作 */
     const sendAction = (action: string) => {
       webViewRef.current?.injectJavaScript(
         `window.dispatchEvent(new MessageEvent('message', {
@@ -56,10 +54,10 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
       );
     };
 
-    // 暴露 startQuiz / replay 給父元件
     useImperativeHandle(ref, () => ({
-      startQuiz: () => sendAction('quiz'),
-      replay: () => sendAction('animate'),
+      startQuiz:          () => sendAction('quiz'),
+      startQuizNoNumbers: () => sendAction('quizNoNumbers'),
+      replay:             () => sendAction('animate'),
     }));
 
     const htmlContent = `
@@ -75,7 +73,7 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
       align-items: center;
       width: ${width}px;
       height: ${height}px;
-      background: #FFFBEB;
+      background: #fbf9f1;
       overflow: hidden;
     }
     #character-target-div {
@@ -111,24 +109,103 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
   ></script>
 
   <script>
-    if (typeof HanziWriter !== 'undefined') {
-      var writer = null;
+  if (typeof HanziWriter !== 'undefined') {
+    var writer = null;
+    var animStrokeIdx = 0;
+    var animTotalStrokes = 0;
 
-      function initWriter(char) {
-        writer = HanziWriter.create('character-target-div', char, {
-          width: ${width - 20},
-          height: ${height - 20},
-          padding: 20,
-          showOutline: ${showOutline},
-          strokeColor: '#1E40AF',
-          outlineColor: '#BFDBFE',
-          drawingColor: '#F59E0B',
-          drawingWidth: 6,
-          strokeAnimationSpeed: 1.2,
-          delayBetweenStrokes: 300,
-        });
+    // ── 工具：取得 SVG 中的筆劃路徑 ──────────────────────────────
+    function getStrokePaths() {
+      var svg = document.querySelector('svg');
+      if (!svg) return [];
+      var mainG = svg.querySelector(':scope > g');
+      if (!mainG) return [];
+      var childGs = Array.from(mainG.children).filter(function(el) {
+        return el.nodeName.toLowerCase() === 'g';
+      });
+      // 找有路徑的第一個子 group（outline group）
+      for (var i = 0; i < childGs.length; i++) {
+        var paths = Array.from(childGs[i].querySelectorAll(':scope > path'));
+        if (paths.length > 0) return paths;
+      }
+      return [];
+    }
 
-        ${animateOnLoad ? `
+    // ── 工具：在指定筆劃起始位置加上數字徽章 ─────────────────────
+    function addNumberBadge(strokeIdx) {
+      var svg = document.querySelector('svg');
+      if (!svg) return;
+      var paths = getStrokePaths();
+      var path = paths[strokeIdx];
+      if (!path) return;
+
+      try {
+        var len = path.getTotalLength();
+        if (len === 0) return;
+        // 取筆劃前 5% 處作為數字位置，接近起始點但不在邊界
+        var pt = path.getPointAtLength(len * 0.05);
+        var ctm = path.getCTM();
+        if (!ctm) return;
+
+        // 轉換至 SVG viewport 座標
+        var svgPt = svg.createSVGPoint();
+        svgPt.x = pt.x;
+        svgPt.y = pt.y;
+        var vp = svgPt.matrixTransform(ctm);
+
+        // 確保徽章不超出畫布邊界
+        var m = 15;
+        vp.x = Math.max(m, Math.min(${width} - m, vp.x));
+        vp.y = Math.max(m, Math.min(${height} - m, vp.y));
+
+        // 建立 SVG group（附加至 svg root，不受 HanziWriter 內部 transform 影響）
+        var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'sn');
+
+        // 底色圓圈
+        var circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', vp.x);
+        circle.setAttribute('cy', vp.y);
+        circle.setAttribute('r', '13');
+        circle.setAttribute('fill', '#E8A000');
+        circle.setAttribute('stroke', 'white');
+        circle.setAttribute('stroke-width', '2.5');
+        circle.setAttribute('opacity', '0.94');
+
+        // 數字文字
+        var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', vp.x);
+        text.setAttribute('y', vp.y + 5);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', 'white');
+        text.setAttribute('font-size', '12');
+        text.setAttribute('font-weight', '900');
+        text.setAttribute('font-family', 'Arial,Helvetica,sans-serif');
+        text.setAttribute('pointer-events', 'none');
+        text.textContent = String(strokeIdx + 1);
+
+        g.appendChild(circle);
+        g.appendChild(text);
+        svg.appendChild(g);
+      } catch(e) { /* silent */ }
+    }
+
+    // ── 工具：清除所有數字徽章 ────────────────────────────────────
+    function clearNumbers() {
+      var nodes = document.querySelectorAll('.sn');
+      Array.from(nodes).forEach(function(n) {
+        if (n.parentNode) n.parentNode.removeChild(n);
+      });
+    }
+
+    // ── 逐筆動畫（附帶數字累積）─────────────────────────────────
+    function animateWithNums() {
+      clearNumbers();
+      var paths = getStrokePaths();
+      animTotalStrokes = paths.length;
+
+      if (animTotalStrokes === 0) {
+        // 備用：直接呼叫 animateCharacter
         writer.animateCharacter({
           onComplete: function() {
             window.ReactNativeWebView && window.ReactNativeWebView.postMessage(
@@ -136,50 +213,99 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
             );
           }
         });
-        ` : ''}
+        return;
       }
 
-      // 修復 #6: window.addEventListener（Android WebView 相容）
-      window.addEventListener('message', function(e) {
-        var msg;
-        try { msg = JSON.parse(e.data); } catch(err) { return; }
+      writer.hideCharacter();
+      animStrokeIdx = 0;
+      nextStroke();
+    }
 
-        if (msg.action === 'init' && msg.character) {
-          initWriter(msg.character);
-        } else if (msg.action === 'animate' && writer) {
-          writer.animateCharacter({
-            onComplete: function() {
-              window.ReactNativeWebView && window.ReactNativeWebView.postMessage(
-                JSON.stringify({ type: 'animationComplete' })
-              );
-            }
-          });
-        } else if (msg.action === 'quiz' && writer) {
-          writer.quiz({
-            onMistake: function(strokeData) {
-              window.ReactNativeWebView && window.ReactNativeWebView.postMessage(
-                JSON.stringify({ type: 'mistake', strokeNum: strokeData.strokeNum })
-              );
-            },
-            onCorrectStroke: function(strokeData) {
-              window.ReactNativeWebView && window.ReactNativeWebView.postMessage(
-                JSON.stringify({ type: 'correctStroke', strokeNum: strokeData.strokeNum })
-              );
-            },
-            onComplete: function(summaryData) {
-              window.ReactNativeWebView && window.ReactNativeWebView.postMessage(
-                JSON.stringify({ type: 'quizComplete', totalMistakes: summaryData.totalMistakes })
-              );
-            }
-          });
+    // 遞迴：依序播放每一筆，完成後加上數字
+    function nextStroke() {
+      if (animStrokeIdx >= animTotalStrokes) {
+        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(
+          JSON.stringify({ type: 'animationComplete' })
+        );
+        return;
+      }
+      var i = animStrokeIdx;
+      writer.animateStroke(i).then(function() {
+        addNumberBadge(i);
+        animStrokeIdx++;
+        setTimeout(nextStroke, 350);
+      });
+    }
+
+    // ── 測驗（帶共用 quiz options）───────────────────────────────
+    function startQuiz() {
+      writer.quiz({
+        onMistake: function(strokeData) {
+          window.ReactNativeWebView && window.ReactNativeWebView.postMessage(
+            JSON.stringify({ type: 'mistake', strokeNum: strokeData.strokeNum })
+          );
+        },
+        onCorrectStroke: function(strokeData) {
+          window.ReactNativeWebView && window.ReactNativeWebView.postMessage(
+            JSON.stringify({ type: 'correctStroke', strokeNum: strokeData.strokeNum })
+          );
+        },
+        onComplete: function(summaryData) {
+          window.ReactNativeWebView && window.ReactNativeWebView.postMessage(
+            JSON.stringify({ type: 'quizComplete', totalMistakes: summaryData.totalMistakes })
+          );
         }
       });
-
-      // 頁面載入後通知 RN，由 RN 發送 init 指令
-      window.ReactNativeWebView && window.ReactNativeWebView.postMessage(
-        JSON.stringify({ type: 'ready' })
-      );
     }
+
+    // ── Writer 初始化 ─────────────────────────────────────────────
+    function initWriter(char) {
+      writer = HanziWriter.create('character-target-div', char, {
+        width: ${width - 20},
+        height: ${height - 20},
+        padding: 20,
+        showOutline: ${showOutline},
+        strokeColor: '#1E40AF',
+        outlineColor: '#BFDBFE',
+        drawingColor: '#E8A000',
+        drawingWidth: 6,
+        strokeAnimationSpeed: 1.2,
+        delayBetweenStrokes: 300,
+      });
+
+      ${animateOnLoad ? `
+      // 短暫延遲確保 SVG paths 已在 DOM 中
+      setTimeout(function() { animateWithNums(); }, 80);
+      ` : ''}
+    }
+
+    // ── 訊息處理 ─────────────────────────────────────────────────
+    window.addEventListener('message', function(e) {
+      var msg;
+      try { msg = JSON.parse(e.data); } catch(err) { return; }
+
+      if (msg.action === 'init' && msg.character) {
+        initWriter(msg.character);
+      } else if (msg.action === 'animate' && writer) {
+        // 重播：重新逐筆播放並重建數字
+        setTimeout(function() { animateWithNums(); }, 80);
+      } else if (msg.action === 'quiz' && writer) {
+        // 第一次練寫：數字保留（從動畫帶過來）
+        startQuiz();
+      } else if (msg.action === 'quizNoNumbers' && writer) {
+        // 第二次練寫：清除數字後開始
+        clearNumbers();
+        startQuiz();
+      } else if (msg.action === 'hideNumbers') {
+        clearNumbers();
+      }
+    });
+
+    // 通知 RN 已就緒，由 RN 發送 init 指令
+    window.ReactNativeWebView && window.ReactNativeWebView.postMessage(
+      JSON.stringify({ type: 'ready' })
+    );
+  }
   </script>
 </body>
 </html>
@@ -226,7 +352,7 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
           showsVerticalScrollIndicator={false}
           startInLoadingState
           renderLoading={() => (
-            <ActivityIndicator size="large" color="#F59E0B" style={styles.loader} />
+            <ActivityIndicator size="large" color="#E8A000" style={styles.loader} />
           )}
         />
       </View>
@@ -241,13 +367,10 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#FFFBEB',
+    backgroundColor: '#fbf9f1',
   },
   loader: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
   },
 });
