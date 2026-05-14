@@ -57,12 +57,6 @@ function mainCharFontSize(charLength: number): number {
   return 40;
 }
 
-/** 內容類型顯示標籤 */
-const CONTENT_TYPE_LABEL: Record<string, string> = {
-  character: '單字',
-  word:      '詞語',
-  idiom:     '成語',
-};
 const CONTENT_TYPE_COLOR: Record<string, string> = {
   character: Colors.primary,
   word:      '#059669',
@@ -257,7 +251,10 @@ export default function LessonScreen({ route, navigation }: any) {
   // ── 內容類型標籤顏色 ──────────────────────────────────────────────
   const contentType = word.contentType ?? 'character';
   const typeColor   = CONTENT_TYPE_COLOR[contentType] ?? Colors.primary;
-  const typeLabel   = CONTENT_TYPE_LABEL[contentType]  ?? '單字';
+  const typeLabel   = t(
+    contentType === 'word'  ? 'contentTypeWord' :
+    contentType === 'idiom' ? 'contentTypeIdiom' : 'contentTypeChar'
+  );
 
   // 字義分頁：級別顯示
   const levelEmoji: Record<string, string> = {
@@ -307,7 +304,7 @@ export default function LessonScreen({ route, navigation }: any) {
                 accessibilityLabel={`粵語：${word.jyutping}`}
               >
                 <Ionicons name="volume-high" size={14} color="#1D4ED8" />
-                <Text style={styles.pronLabel}>粵</Text>
+                <Text style={styles.pronLabel}>{t('lessonCantonese')}</Text>
                 <Text style={styles.pronText}>{word.jyutping}</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -316,7 +313,7 @@ export default function LessonScreen({ route, navigation }: any) {
                 accessibilityLabel={`普通話：${word.pinyin}`}
               >
                 <Ionicons name="volume-high" size={14} color="#7C3AED" />
-                <Text style={[styles.pronLabel, styles.pronLabelMandarin]}>普</Text>
+                <Text style={[styles.pronLabel, styles.pronLabelMandarin]}>{t('lessonMandarin')}</Text>
                 <Text style={styles.pronText}>{word.pinyin}</Text>
               </TouchableOpacity>
             </View>
@@ -330,7 +327,7 @@ export default function LessonScreen({ route, navigation }: any) {
               accessibilityLabel={`粵語發音：${word.jyutping}`}
             >
               <Ionicons name="volume-high" size={14} color="#1D4ED8" />
-              <Text style={styles.pronLabel}>粵</Text>
+              <Text style={styles.pronLabel}>{t('lessonCantonese')}</Text>
               <Text style={styles.pronText}>{word.jyutping}</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -339,7 +336,7 @@ export default function LessonScreen({ route, navigation }: any) {
               accessibilityLabel={`普通話發音：${word.pinyin}`}
             >
               <Ionicons name="volume-high" size={14} color="#7C3AED" />
-              <Text style={[styles.pronLabel, styles.pronLabelMandarin]}>普</Text>
+              <Text style={[styles.pronLabel, styles.pronLabelMandarin]}>{t('lessonMandarin')}</Text>
               <Text style={styles.pronText}>{word.pinyin}</Text>
             </TouchableOpacity>
           </View>
@@ -354,16 +351,16 @@ export default function LessonScreen({ route, navigation }: any) {
           accessibilityLabel="字義分頁"
         >
           <Text style={[styles.tabText, activeTab === 'meaning' && styles.tabTextActive]}>
-            {contentType === 'character' ? '📖 字義' : '📖 詞義'}
+            {contentType === 'character' ? t('lessonTab_meaning') : t('lessonTab_wordMeaning')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'write' && styles.tabActive]}
           onPress={() => setActiveTab('write')}
-          accessibilityLabel="練寫分頁"
+          accessibilityLabel={t('lessonTab_writing')}
         >
           <Text style={[styles.tabText, activeTab === 'write' && styles.tabTextActive]}>
-            ✍️ 練寫
+            {t('lessonTab_writing')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -375,23 +372,23 @@ export default function LessonScreen({ route, navigation }: any) {
         {activeTab === 'meaning' && (
           <View style={styles.meaningContainer}>
             <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>意思</Text>
+              <Text style={styles.infoLabel}>{t('lessonMeaning')}</Text>
               <Text style={styles.infoValue}>{word.meaning_zh}</Text>
               <Text style={styles.infoValueEn}>{word.meaning_en}</Text>
             </View>
 
             <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>例句</Text>
+              <Text style={styles.infoLabel}>{t('lessonExample')}</Text>
               <Text style={styles.exampleSentence}>{word.example_sentence}</Text>
             </View>
 
             <View style={styles.infoCardRow}>
               <View style={[styles.infoCard, styles.infoCardHalf]}>
-                <Text style={styles.infoLabel}>筆畫數</Text>
-                <Text style={styles.infoValue}>{word.stroke_count} 畫</Text>
+                <Text style={styles.infoLabel}>{t('lessonStrokes')}</Text>
+                <Text style={styles.infoValue}>{t('lessonStrokeCount').replace('{n}', String(word.stroke_count))}</Text>
               </View>
               <View style={[styles.infoCard, styles.infoCardHalf]}>
-                <Text style={styles.infoLabel}>種類</Text>
+                <Text style={styles.infoLabel}>{t('lessonLevel')}</Text>
                 <Text style={[styles.infoValue, { color: typeColor }]}>{levelEmoji[word.level] ?? word.level}</Text>
               </View>
             </View>
@@ -399,7 +396,7 @@ export default function LessonScreen({ route, navigation }: any) {
             {/* 成語額外說明 */}
             {contentType === 'idiom' && (
               <View style={[styles.infoCard, styles.idiomNote]}>
-                <Text style={styles.infoLabel}>組成漢字</Text>
+                <Text style={styles.infoLabel}>{t('lessonIdiomComponents')}</Text>
                 <View style={styles.idiomCharsRow}>
                   {(word.components ?? []).map((c, i) => (
                     <View key={i} style={styles.idiomCharItem}>
@@ -416,7 +413,7 @@ export default function LessonScreen({ route, navigation }: any) {
               onPress={() => setActiveTab('write')}
               accessibilityLabel="前往練寫分頁"
             >
-              <Text style={styles.nextTabBtnText}>去練寫 ✍️</Text>
+              <Text style={styles.nextTabBtnText}>{t('lessonPractice')}</Text>
               <Ionicons name="arrow-forward" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -462,12 +459,12 @@ export default function LessonScreen({ route, navigation }: any) {
             {/* 狀態提示文字 */}
             <Text style={styles.writeHint}>
               {writePhase === 'animating' && (isMultiChar
-                ? `👀 觀看「${currentWriteChar}」示範…`
-                : '👀 觀看示範筆順…')}
-              {writePhase === 'ready'     && '✋ 準備好了嗎？'}
-              {writePhase === 'quizzing' && quizRound === 1 && `✍️ 第一次：跟著數字寫「${currentWriteChar}」`}
-              {writePhase === 'quizzing' && quizRound === 2 && `🧠 第二次：憑記憶寫「${currentWriteChar}」`}
-              {writePhase === 'done'      && '🎉 全部完成！'}
+                ? t('watchingChar').replace('{char}', currentWriteChar)
+                : t('lessonWatchDemo'))}
+              {writePhase === 'ready'    && t('lessonReady')}
+              {writePhase === 'quizzing' && quizRound === 1 && t('lessonQuizRound1').replace('{char}', currentWriteChar)}
+              {writePhase === 'quizzing' && quizRound === 2 && t('lessonQuizRound2').replace('{char}', currentWriteChar)}
+              {writePhase === 'done'     && t('lessonAllDone')}
             </Text>
 
             {/* HanziWriter 畫布
@@ -495,15 +492,15 @@ export default function LessonScreen({ route, navigation }: any) {
                   accessibilityLabel="重播示範動畫"
                 >
                   <Ionicons name="refresh" size={18} color={Colors.primary} />
-                  <Text style={styles.replayBtnText}>重播示範</Text>
+                  <Text style={styles.replayBtnText}>{t('lessonReplayDemo')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.startQuizBtn, { backgroundColor: typeColor }]}
                   onPress={handleStartQuiz}
-                  accessibilityLabel="開始手寫練習"
+                  accessibilityLabel={t('lessonStartPractice')}
                 >
                   <Ionicons name="pencil" size={20} color="#fff" />
-                  <Text style={styles.startQuizBtnText}>開始練寫</Text>
+                  <Text style={styles.startQuizBtnText}>{t('lessonStartPractice')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -511,9 +508,7 @@ export default function LessonScreen({ route, navigation }: any) {
             {/* ── 階段：quizzing ── */}
             {writePhase === 'quizzing' && (
               <Text style={styles.quizTip}>
-                {quizRound === 1
-                  ? '跟著數字，按筆順逐筆描寫'
-                  : '不看數字，憑記憶按筆順寫 💪'}
+                {quizRound === 1 ? t('lessonTipRound1') : t('lessonTipRound2')}
               </Text>
             )}
 
@@ -523,40 +518,40 @@ export default function LessonScreen({ route, navigation }: any) {
                 <View style={styles.starRow}>{starRow(earnedStars)}</View>
                 <Text style={styles.completeText}>
                   {earnedStars === 3
-                    ? '完美！零錯誤 🏆'
+                    ? t('lessonPerfect')
                     : earnedStars === 2
-                    ? '做得好！繼續加油 👍'
-                    : '完成！多練幾次會更棒 💪'}
+                    ? t('lessonGood')
+                    : t('lessonOk')}
                 </Text>
-                <Text style={styles.starsEarned}>+ {earnedStars} ⭐</Text>
+                <Text style={styles.starsEarned}>{t('lessonStarsEarned').replace('{n}', String(earnedStars))}</Text>
 
                 <View style={styles.doneButtons}>
                   <TouchableOpacity
                     style={styles.replayQuizBtn}
                     onPress={handleReplay}
-                    accessibilityLabel="再練一次"
+                    accessibilityLabel={t('lessonPracticeAgain')}
                   >
                     <Ionicons name="refresh" size={16} color={Colors.primary} />
-                    <Text style={styles.replayQuizBtnText}>再練</Text>
+                    <Text style={styles.replayQuizBtnText}>{t('lessonPracticeAgain')}</Text>
                   </TouchableOpacity>
 
                   {nextWordId ? (
                     <TouchableOpacity
                       style={styles.nextBtn}
                       onPress={handleNextLesson}
-                      accessibilityLabel="前往下一課"
+                      accessibilityLabel={t('lessonNextBtn')}
                     >
-                      <Text style={styles.nextBtnText}>下一課</Text>
+                      <Text style={styles.nextBtnText}>{t('lessonNextBtn')}</Text>
                       <Ionicons name="arrow-forward" size={18} color="#fff" />
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
                       style={styles.nextBtn}
                       onPress={() => navigation.goBack()}
-                      accessibilityLabel="返回地圖"
+                      accessibilityLabel={t('lessonBackToMap')}
                     >
                       <Ionicons name="map" size={18} color="#fff" />
-                      <Text style={styles.nextBtnText}>返回地圖</Text>
+                      <Text style={styles.nextBtnText}>{t('lessonBackToMap')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
