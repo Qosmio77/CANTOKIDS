@@ -134,6 +134,25 @@ export const translations = {
     quizReadDesc:      '看漢字，選出正確的粵語拼音',
     quizOddOne:        '揀錯字',
     quizOddOneDesc:    '四個字中，找出意思不同的一個',
+    // Level tab labels (short)
+    quizTabSeedling:   '幼苗',
+    quizTabSapling:    '小樹',
+    quizTabTree:       '大樹',
+    quizTabSunflower:  '向日葵',
+    quizTabRainbow:    '彩虹',
+    quizTabGalaxy:     '星河',
+    quizTabVocab:      '詞語',
+    quizTabIdiom:      '成語',
+    quizTabAll:        '全部混',
+    // Level info descriptions
+    quizInfoSeedling:  '🌱 幼苗級：山水火木日月人口手心（10 字）',
+    quizInfoSapling:   '🌳 小樹級：貓狗魚鳥花草雨風天地（10 字）',
+    quizInfoTree:      '🏆 大樹級：書學玩食飲大小好多家（10 字）',
+    quizInfoSunflower: '🌻 向日葵級：一二三四五六七八九十（10 字）',
+    quizInfoRainbow:   '🌈 彩虹級：紅橙黃綠藍頭眼耳鼻腳（10 字）',
+    quizInfoGalaxy:    '⭐ 星河級：爸媽哥姐弟妹爺嫲公婆（10 字）',
+    quizInfoAll:       '🌍 全部混合：60 個漢字隨機出題',
+    quizLevelUpgrade:  '（需升級）',
 
     // ── BossBattleScreen ─────────────────────────────────
     bossHp:            'HP',
@@ -316,6 +335,25 @@ export const translations = {
     quizReadDesc:      'See the character, choose the correct Jyutping',
     quizOddOne:        'Odd One Out',
     quizOddOneDesc:    'Four characters — find the one with a different meaning',
+    // Level tab labels (short)
+    quizTabSeedling:   'Seedling',
+    quizTabSapling:    'Sapling',
+    quizTabTree:       'Tree',
+    quizTabSunflower:  'Sunflower',
+    quizTabRainbow:    'Rainbow',
+    quizTabGalaxy:     'Galaxy',
+    quizTabVocab:      'Vocab',
+    quizTabIdiom:      'Idioms',
+    quizTabAll:        'All Mix',
+    // Level info descriptions
+    quizInfoSeedling:  '🌱 Seedling: 山水火木日月人口手心 (10 chars)',
+    quizInfoSapling:   '🌳 Sapling: 貓狗魚鳥花草雨風天地 (10 chars)',
+    quizInfoTree:      '🏆 Tree: 書學玩食飲大小好多家 (10 chars)',
+    quizInfoSunflower: '🌻 Sunflower: 一二三四五六七八九十 (10 chars)',
+    quizInfoRainbow:   '🌈 Rainbow: 紅橙黃綠藍頭眼耳鼻腳 (10 chars)',
+    quizInfoGalaxy:    '⭐ Galaxy: 爸媽哥姐弟妹爺嫲公婆 (10 chars)',
+    quizInfoAll:       '🌍 All Mix: 60 characters shuffled randomly',
+    quizLevelUpgrade:  '(Upgrade Required)',
 
     // ── BossBattleScreen ─────────────────────────────────
     bossHp:            'HP',

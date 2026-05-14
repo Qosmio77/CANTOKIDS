@@ -18,6 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { useProgressStore } from '../store/useProgressStore';
+import { useTranslation } from '../hooks/useTranslation';
 
 export type QuizLevel = 'seedling' | 'sapling' | 'tree' | 'sunflower' | 'rainbow' | 'galaxy' | 'vocab' | 'idiom' | 'all';
 export type QuizType = 'listenPick' | 'readPick' | 'findWrong';
@@ -38,48 +39,59 @@ interface LevelOption {
   requiresPremium: boolean;
 }
 
-const QUIZ_MODES: QuizMode[] = [
-  {
-    type: 'listenPick',
-    emoji: '👂',
-    title: '聽音選字',
-    description: '聆聽粵語發音，選出正確的漢字',
-    color: Colors.cantonese,
-    bgColor: Colors.cantoneseBg,
-  },
-  {
-    type: 'readPick',
-    emoji: '👀',
-    title: '看字選音',
-    description: '看漢字，選出正確的粵語拼音',
-    color: Colors.mandarin,
-    bgColor: Colors.mandarinLight,
-  },
-  {
-    type: 'findWrong',
-    emoji: '🔍',
-    title: '揀錯字',
-    description: '四個字中，找出意思不同的一個',
-    color: Colors.quiz,
-    bgColor: Colors.quizLight,
-  },
-];
-
-const LEVEL_OPTIONS: LevelOption[] = [
-  { level: 'seedling',  emoji: '🌱', label: '幼苗',   requiresPremium: false },
-  { level: 'sapling',   emoji: '🌳', label: '小樹',   requiresPremium: true  },
-  { level: 'tree',      emoji: '🏆', label: '大樹',   requiresPremium: true  },
-  { level: 'sunflower', emoji: '🌻', label: '向日葵', requiresPremium: true  },
-  { level: 'rainbow',   emoji: '🌈', label: '彩虹',   requiresPremium: true  },
-  { level: 'galaxy',    emoji: '⭐', label: '星河',   requiresPremium: true  },
-  { level: 'vocab',     emoji: '📝', label: '詞語',   requiresPremium: true  },
-  { level: 'idiom',     emoji: '🏮', label: '成語',   requiresPremium: true  },
-  { level: 'all',       emoji: '🌍', label: '全部混',  requiresPremium: true  },
-];
-
 export default function QuizMenuScreen({ navigation }: any) {
   const [selectedLevel, setSelectedLevel] = useState<QuizLevel>('seedling');
   const { isPremium } = useProgressStore();
+  const { t } = useTranslation();
+
+  const QUIZ_MODES: QuizMode[] = [
+    {
+      type: 'listenPick',
+      emoji: '👂',
+      title: t('quizListen'),
+      description: t('quizListenDesc'),
+      color: Colors.cantonese,
+      bgColor: Colors.cantoneseBg,
+    },
+    {
+      type: 'readPick',
+      emoji: '👀',
+      title: t('quizRead'),
+      description: t('quizReadDesc'),
+      color: Colors.mandarin,
+      bgColor: Colors.mandarinLight,
+    },
+    {
+      type: 'findWrong',
+      emoji: '🔍',
+      title: t('quizOddOne'),
+      description: t('quizOddOneDesc'),
+      color: Colors.quiz,
+      bgColor: Colors.quizLight,
+    },
+  ];
+
+  const LEVEL_OPTIONS: LevelOption[] = [
+    { level: 'seedling',  emoji: '🌱', label: t('quizTabSeedling'),  requiresPremium: false },
+    { level: 'sapling',   emoji: '🌳', label: t('quizTabSapling'),   requiresPremium: true  },
+    { level: 'tree',      emoji: '🏆', label: t('quizTabTree'),      requiresPremium: true  },
+    { level: 'sunflower', emoji: '🌻', label: t('quizTabSunflower'), requiresPremium: true  },
+    { level: 'rainbow',   emoji: '🌈', label: t('quizTabRainbow'),   requiresPremium: true  },
+    { level: 'galaxy',    emoji: '⭐', label: t('quizTabGalaxy'),    requiresPremium: true  },
+    { level: 'vocab',     emoji: '📝', label: t('quizTabVocab'),     requiresPremium: true  },
+    { level: 'idiom',     emoji: '🏮', label: t('quizTabIdiom'),     requiresPremium: true  },
+    { level: 'all',       emoji: '🌍', label: t('quizTabAll'),       requiresPremium: true  },
+  ];
+
+  const LEVEL_INFO: Partial<Record<QuizLevel, string>> = {
+    seedling:  t('quizInfoSeedling'),
+    sapling:   t('quizInfoSapling'),
+    tree:      t('quizInfoTree'),
+    sunflower: t('quizInfoSunflower'),
+    rainbow:   t('quizInfoRainbow'),
+    galaxy:    t('quizInfoGalaxy'),
+    all:       t('quizInfoAll'),
+  };
 
   const handleLevelSelect = (opt: LevelOption) => {
     if (opt.requiresPremium && !isPremium) {
@@ -92,8 +104,8 @@ export default function QuizMenuScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>🎮 互動測驗</Text>
-        <Text style={styles.subtitle}>選擇詞庫，再選測驗方式</Text>
+        <Text style={styles.title}>{t('interactiveTest')}</Text>
+        <Text style={styles.subtitle}>{t('quizSelectMode')}</Text>
 
         {/* 詞庫級別選擇器 */}
         <View style={styles.levelRow}>
@@ -109,7 +121,7 @@ export default function QuizMenuScreen({ navigation }: any) {
                   locked && styles.levelTabLocked,
                 ]}
                 onPress={() => handleLevelSelect(opt)}
-                accessibilityLabel={`選擇 ${opt.label}${locked ? '（需升級）' : ''}`}
+                accessibilityLabel={`${opt.label}${locked ? t('quizLevelUpgrade') : ''}`}
               >
                 <Text style={styles.levelTabEmoji}>{locked ? '🔒' : opt.emoji}</Text>
                 <Text style={[styles.levelTabLabel, active && styles.levelTabLabelActive]}>
@@ -123,13 +135,7 @@ export default function QuizMenuScreen({ navigation }: any) {
         {/* 目前選中的級別說明 */}
         <View style={styles.levelInfo}>
           <Text style={styles.levelInfoText}>
-            {selectedLevel === 'seedling'  && '🌱 幼苗級：山水火木日月人口手心（10 字）'}
-            {selectedLevel === 'sapling'   && '🌳 小樹級：貓狗魚鳥花草雨風天地（10 字）'}
-            {selectedLevel === 'tree'      && '🏆 大樹級：書學玩食飲大小好多家（10 字）'}
-            {selectedLevel === 'sunflower' && '🌻 向日葵級：一二三四五六七八九十（10 字）'}
-            {selectedLevel === 'rainbow'   && '🌈 彩虹級：紅橙黃綠藍頭眼耳鼻腳（10 字）'}
-            {selectedLevel === 'galaxy'    && '⭐ 星河級：爸媽哥姐弟妹爺嫲公婆（10 字）'}
-            {selectedLevel === 'all'       && '🌍 全部混合：60 個漢字隨機出題'}
+            {LEVEL_INFO[selectedLevel] ?? ''}
           </Text>
         </View>
 
