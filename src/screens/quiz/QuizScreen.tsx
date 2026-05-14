@@ -22,6 +22,7 @@ import {
 import { buildBadgeStats, getNewlyUnlockedBadges, Badge } from '../../services/badgeService';
 import BadgeUnlockModal from '../../components/BadgeUnlockModal';
 import { QuizLevel } from '../QuizMenuScreen';
+import { useTranslation } from '../../hooks/useTranslation';
 
 type QuizType = 'listenPick' | 'readPick' | 'findWrong';
 
@@ -145,6 +146,7 @@ export default function QuizScreen({ route, navigation }: any) {
   const VALID_LEVELS: QuizLevel[] = ['seedling', 'sapling', 'tree', 'sunflower', 'rainbow', 'galaxy', 'vocab', 'idiom', 'all'];
   const quizLevel: QuizLevel = VALID_LEVELS.includes(RAW_LEVEL) ? RAW_LEVEL : 'seedling';
 
+  const { t } = useTranslation();
   const { playWord } = useAudio();
   const { addStars, recordAnswer, incrementPerfectQuiz, incrementTotalAnswers } = useProgressStore();
 
@@ -285,9 +287,11 @@ export default function QuizScreen({ route, navigation }: any) {
         <View style={styles.resultContainer}>
           <Text style={styles.resultEmoji}>{score === QUESTIONS_PER_ROUND ? '🎉' : '👏'}</Text>
           <Text style={styles.resultTitle}>
-            {score === QUESTIONS_PER_ROUND ? '全對！太厲害了！' : '測驗完成！'}
+            {score === QUESTIONS_PER_ROUND ? t('quizResultPerfect') : t('quizResultDone')}
           </Text>
-          <Text style={styles.resultScore}>{score} / {QUESTIONS_PER_ROUND} 題正確</Text>
+          <Text style={styles.resultScore}>
+            {t('quizResultScore').replace('{score}', String(score)).replace('{total}', String(QUESTIONS_PER_ROUND))}
+          </Text>
           <View style={styles.starsRow}>
             {[1, 2, 3].map((i) => (
               <Ionicons key={i} name={i <= stars ? 'star' : 'star-outline'} size={36} color={Colors.primary} />
@@ -295,10 +299,10 @@ export default function QuizScreen({ route, navigation }: any) {
           </View>
           <TouchableOpacity style={styles.retryBtn} onPress={handleRetry}>
             <Ionicons name="refresh" size={20} color={Colors.white} />
-            <Text style={styles.retryBtnText}>再玩一次</Text>
+            <Text style={styles.retryBtnText}>{t('quizPlayAgain')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.homeBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.homeBtnText}>回首頁</Text>
+            <Text style={styles.homeBtnText}>{t('quizGoHome')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -325,20 +329,20 @@ export default function QuizScreen({ route, navigation }: any) {
       <View style={styles.questionArea}>
         {currentQ.type === 'listenPick' && (
           <>
-            <Text style={styles.questionHint}>聽聲音，選出正確的字</Text>
+            <Text style={styles.questionHint}>{t('quizHintListen')}</Text>
             <TouchableOpacity
               style={styles.speakerBtn}
               onPress={() => playWord(currentQ.correct.character, 'cantonese')}
-              accessibilityLabel="重播發音"
+              accessibilityLabel={t('quizHintReplay')}
             >
               <Ionicons name="volume-high" size={52} color={Colors.cantonese} />
-              <Text style={styles.speakerLabel}>點擊重播</Text>
+              <Text style={styles.speakerLabel}>{t('quizHintReplay')}</Text>
             </TouchableOpacity>
           </>
         )}
         {currentQ.type === 'readPick' && (
           <>
-            <Text style={styles.questionHint}>選出正確的粵語拼音</Text>
+            <Text style={styles.questionHint}>{t('quizHintRead')}</Text>
             <Animated.Text style={[styles.questionChar, { transform: [{ scale: scaleAnim }] }]}>
               {currentQ.correct.character}
             </Animated.Text>
@@ -346,8 +350,8 @@ export default function QuizScreen({ route, navigation }: any) {
         )}
         {currentQ.type === 'findWrong' && (
           <>
-            <Text style={styles.questionHint}>哪一個字不屬於同一類？</Text>
-            <Text style={styles.questionSubhint}>三個字屬於同一主題，找出不同類的那個！</Text>
+            <Text style={styles.questionHint}>{t('quizHintFindWrong')}</Text>
+            <Text style={styles.questionSubhint}>{t('quizHintFindWrongSub')}</Text>
           </>
         )}
       </View>

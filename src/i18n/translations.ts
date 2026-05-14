@@ -188,6 +188,18 @@ export const translations = {
     quizInfoAll:       '🌍 全部混合：60 個漢字隨機出題',
     quizLevelUpgrade:  '（需升級）',
 
+    // ── QuizScreen ───────────────────────────────────────
+    quizResultPerfect:   '全對！太厲害了！',
+    quizResultDone:      '測驗完成！',
+    quizResultScore:     '{score} / {total} 題正確',
+    quizPlayAgain:       '再玩一次',
+    quizGoHome:          '回首頁',
+    quizHintListen:      '聽聲音，選出正確的字',
+    quizHintReplay:      '點擊重播',
+    quizHintRead:        '選出正確的粵語拼音',
+    quizHintFindWrong:   '哪一個字不屬於同一類？',
+    quizHintFindWrongSub:'三個字屬於同一主題，找出不同類的那個！',
+
     // ── BossBattleScreen ─────────────────────────────────
     bossHp:            'HP',
     bossAttack:        '攻擊！',
@@ -195,6 +207,18 @@ export const translations = {
     bossTreasureDrop:  '獲得寶物！',
     bossNextWave:      '繼續挑戰',
     bossRetry:         '再試一次',
+    bossBattleTitle:   '⚔️ Boss 戰',
+    bossVictoryTitle:  'Boss 擊敗！🎉',
+    bossVictoryDesc:   '你打敗了 {name}，獲得 {xp} XP！',
+    bossBackToMap:     '返回地圖 🗺️',
+
+    // ── MapScreen ────────────────────────────────────────
+    mapParentBtn:      '家長',
+    mapLevelCount:     '{n} 個',
+    mapBossDefeated:   '{name} — 已擊敗！',
+    mapVocabLockFree:  '升級高級版後解鎖詞語關卡',
+    mapIdiomLockFree:  '升級高級版後解鎖成語關卡',
+    mapLegendPremium:  '高級版課程（進入家長區升級）',
 
     // ── TreasureScreen ───────────────────────────────────
     treasureTitle:     '🥚 我的寵物',
@@ -423,6 +447,18 @@ export const translations = {
     quizInfoAll:       '🌍 All Mix: 60 characters shuffled randomly',
     quizLevelUpgrade:  '(Upgrade Required)',
 
+    // ── QuizScreen ───────────────────────────────────────
+    quizResultPerfect:   'Perfect score! Amazing! 🎉',
+    quizResultDone:      'Quiz Complete!',
+    quizResultScore:     '{score} / {total} correct',
+    quizPlayAgain:       'Play Again',
+    quizGoHome:          'Back to Home',
+    quizHintListen:      'Listen and choose the correct character',
+    quizHintReplay:      'Tap to replay',
+    quizHintRead:        'Choose the correct Jyutping',
+    quizHintFindWrong:   'Which character doesn\'t belong?',
+    quizHintFindWrongSub:'Three share the same theme — find the odd one out!',
+
     // ── BossBattleScreen ─────────────────────────────────
     bossHp:            'HP',
     bossAttack:        'Attack!',
@@ -430,6 +466,18 @@ export const translations = {
     bossTreasureDrop:  'Treasure Dropped!',
     bossNextWave:      'Keep Going',
     bossRetry:         'Try Again',
+    bossBattleTitle:   '⚔️ Boss Battle',
+    bossVictoryTitle:  'Boss Defeated! 🎉',
+    bossVictoryDesc:   'You defeated {name} and earned {xp} XP!',
+    bossBackToMap:     'Back to Map 🗺️',
+
+    // ── MapScreen ────────────────────────────────────────
+    mapParentBtn:      'Parents',
+    mapLevelCount:     '{n} chars',
+    mapBossDefeated:   '{name} — Defeated!',
+    mapVocabLockFree:  'Upgrade to unlock the Vocabulary stage',
+    mapIdiomLockFree:  'Upgrade to unlock the Idioms stage',
+    mapLegendPremium:  'Premium lessons (upgrade in Parent area)',
 
     // ── TreasureScreen ───────────────────────────────────
     treasureTitle:     '🥚 My Pets',

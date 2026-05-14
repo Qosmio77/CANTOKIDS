@@ -124,14 +124,14 @@ function LevelSection({
             bossDefeated && styles.bossBtnDefeated,
           ]}
           onPress={() => navigation.navigate('BossBattle', { bossId })}
-          accessibilityLabel={bossDefeated ? 'Boss 已擊敗' : '挑戰 Boss'}
+          accessibilityLabel={bossDefeated ? t('bossDefeated') : t('bossChallenge')}
         >
           {bossDefeated ? (
             <>
               <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
               <Text style={styles.bossBtnTextDefeated}>
                 {BOSSES.find((b) => b.id === bossId)?.emoji}{' '}
-                {BOSSES.find((b) => b.id === bossId)?.name} — 已擊敗！
+                {t('mapBossDefeated').replace('{name}', BOSSES.find((b) => b.id === bossId)?.name ?? '')}
               </Text>
             </>
           ) : (
@@ -177,7 +177,7 @@ function MultiCharSection({
     <View style={styles.levelSection}>
       <View style={styles.levelHeader}>
         <Text style={[styles.levelBadge, { color: accentColor }]}>{label}</Text>
-        <Text style={styles.levelCount}>{words.length} 個</Text>
+        <Text style={styles.levelCount}>{t('mapLevelCount').replace('{n}', String(words.length))}</Text>
       </View>
       <View style={styles.grid}>
         {words.map((word, index) => {
@@ -266,7 +266,7 @@ export default function MapScreen({ navigation }: any) {
           accessibilityLabel="進入家長控制台"
         >
           <Ionicons name="people" size={18} color={Colors.primary} />
-          <Text style={styles.parentBtnText}>家長</Text>
+          <Text style={styles.parentBtnText}>{t('mapParentBtn')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -423,7 +423,7 @@ export default function MapScreen({ navigation }: any) {
           <LockedGate
             icon="📝"
             label={t('levelVocab')}
-            hint="升級高級版後解鎖詞語關卡"
+            hint={t('mapVocabLockFree')}
             accentColor="#059669"
           />
         )}
@@ -454,7 +454,7 @@ export default function MapScreen({ navigation }: any) {
           <LockedGate
             icon="🏮"
             label={t('levelIdiom')}
-            hint="升級高級版後解鎖成語關卡"
+            hint={t('mapIdiomLockFree')}
             accentColor="#7C3AED"
           />
         )}
@@ -464,7 +464,7 @@ export default function MapScreen({ navigation }: any) {
           <View style={styles.legend}>
             <View style={styles.legendItem}>
               <Ionicons name="diamond" size={14} color="#A78BFA" />
-              <Text style={styles.legendText}>高級版課程（進入家長區升級）</Text>
+              <Text style={styles.legendText}>{t('mapLegendPremium')}</Text>
             </View>
           </View>
         )}

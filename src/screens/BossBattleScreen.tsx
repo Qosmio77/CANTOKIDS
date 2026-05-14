@@ -40,6 +40,7 @@ import TreasureDropModal from '../components/TreasureDropModal';
 import { rollLoot } from '../services/lootService';
 import { Treasure } from '../data/treasures';
 import { Colors } from '../theme/colors';
+import { useTranslation } from '../hooks/useTranslation';
 
 // ── 取得對應 level 的單字陣列 ──────────────────────────────────────
 function getWordsForBoss(boss: BossDef): Word[] {
@@ -107,6 +108,7 @@ export default function BossBattleScreen({ route, navigation }: any) {
     bossesDefeated,
   } = useProgressStore();
 
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>('battle');
   const [qIndex, setQIndex] = useState(0);
   const [bossHP, setBossHP] = useState(BOSS_MAX_HP);
@@ -222,16 +224,16 @@ export default function BossBattleScreen({ route, navigation }: any) {
       <SafeAreaView style={[styles.safeArea, { backgroundColor: boss.bgColor }]}>
         <View style={styles.endContainer}>
           <Text style={styles.endEmoji}>{boss.emoji}</Text>
-          <Text style={styles.endTitle}>Boss 擊敗！🎉</Text>
+          <Text style={styles.endTitle}>{t('bossVictoryTitle')}</Text>
           <Text style={styles.endSubtitle}>
-            你打敗了 {boss.name}，獲得 {XP_PER_BOSS_DEFEATED} XP！
+            {t('bossVictoryDesc').replace('{name}', boss.name).replace('{xp}', String(XP_PER_BOSS_DEFEATED))}
           </Text>
           <TouchableOpacity
             style={[styles.endBtn, { backgroundColor: boss.color }]}
             onPress={() => navigation.goBack()}
-            accessibilityLabel="返回地圖"
+            accessibilityLabel={t('bossBackToMap')}
           >
-            <Text style={styles.endBtnText}>返回地圖 🗺️</Text>
+            <Text style={styles.endBtnText}>{t('bossBackToMap')}</Text>
           </TouchableOpacity>
         </View>
         <LevelUpModal
@@ -256,7 +258,7 @@ export default function BossBattleScreen({ route, navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color={boss.color} />
         </TouchableOpacity>
-        <Text style={[styles.topTitle, { color: boss.color }]}>⚔️ Boss 戰</Text>
+        <Text style={[styles.topTitle, { color: boss.color }]}>{t('bossBattleTitle')}</Text>
       </View>
 
       {/* Boss 區塊 */}
