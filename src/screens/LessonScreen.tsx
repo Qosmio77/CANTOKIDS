@@ -84,6 +84,8 @@ export default function LessonScreen({ route, navigation }: any) {
   // ── 多字練寫狀態 ──────────────────────────────────────────────────
   const [charIndex, setCharIndex] = useState(0);
   const accMistakesRef = useRef(0);
+  // 每個字固定練 2 次：第 1 次有數字，第 2 次無數字（0 = 未開始）
+  const [quizRound, setQuizRound] = useState(0);
 
   // Star pop animation
   const starScale = useRef(new Animated.Value(0)).current;
@@ -115,19 +117,17 @@ export default function LessonScreen({ route, navigation }: any) {
 
   // ── 動畫結束 → 顯示「開始練寫」 ─────────────────────────────────
   const handleAnimationComplete = useCallback(() => {
-    quizAttemptRef.current = 0;   // 每次動畫完成後重置嘗試計數
+    quizAttemptRef.current = 0;
+    setQuizRound(0);
     setWritePhase('ready');
   }, []);
 
-  // ── 開始練寫 ─────────────────────────────────────────────────────
+  // ── 開始練寫（永遠從第 1 次開始，有筆順數字）────────────────────
   const handleStartQuiz = useCallback(() => {
-    quizAttemptRef.current += 1;
+    quizAttemptRef.current = 1;
+    setQuizRound(1);
     setWritePhase('quizzing');
-    if (quizAttemptRef.current === 1) {
-      writerRef.current?.startQuiz();           // 第一次：筆順數字保留
-    } else {
-      writerRef.current?.startQuizNoNumbers();  // 第二次起：清除數字憑記憶練寫
-    }
+    writerRef.current?.startQuiz();   // 第 1 次：保留數字作引導
   }, []);
 
   // ── 完成整個課程 ──────────────────────────────────────────────────
@@ -184,14 +184,28 @@ export default function LessonScreen({ route, navigation }: any) {
     (mistakes: number) => {
       if (writePhase === 'done') return;
 
+      accMistakesRef.current += mistakes;
+
+      if (quizAttemptRef.current === 1) {
+        // ── 第 1 次完成 → 自動開始第 2 次（無數字）──
+        quizAttemptRef.current = 2;
+        setQuizRound(2);
+        writerRef.current?.startQuizNoNumbers();
+        return;
+      }
+
+      // ── 第 2 次完成 → 結算這個字 ──
+      const totalMistakes = accMistakesRef.current;
+      quizAttemptRef.current = 0;
+      setQuizRound(0);
+
       if (isMultiChar && charIndex < writeComponents.length - 1) {
-        // 還有下一個字
-        accMistakesRef.current += mistakes;
+        // 多字詞：移到下一個字（accMistakesRef 繼續累加）
         setCharIndex((prev) => prev + 1);
         setWritePhase('animating');
       } else {
-        // 全部完成
-        finalizeLesson(accMistakesRef.current + mistakes);
+        // 全部字完成
+        finalizeLesson(totalMistakes);
         accMistakesRef.current = 0;
       }
     },
@@ -202,7 +216,8 @@ export default function LessonScreen({ route, navigation }: any) {
   const handleReplay = useCallback(() => {
     setCharIndex(0);
     accMistakesRef.current = 0;
-    quizAttemptRef.current = 0;   // 重播時重置，讓第一次練寫再次顯示數字
+    quizAttemptRef.current = 0;
+    setQuizRound(0);
     setWritePhase('animating');
     setEarnedStars(0);
     starScale.setValue(0);
@@ -450,7 +465,8 @@ export default function LessonScreen({ route, navigation }: any) {
                 ? `👀 觀看「${currentWriteChar}」示範…`
                 : '👀 觀看示範筆順…')}
               {writePhase === 'ready'     && '✋ 準備好了嗎？'}
-              {writePhase === 'quizzing'  && `✍️ 按筆順寫「${currentWriteChar}」`}
+              {writePhase === 'quizzing' && quizRound === 1 && `✍️ 第一次：跟著數字寫「${currentWriteChar}」`}
+              {writePhase === 'quizzing' && quizRound === 2 && `🧠 第二次：憑記憶寫「${currentWriteChar}」`}
               {writePhase === 'done'      && '🎉 全部完成！'}
             </Text>
 
@@ -494,7 +510,11 @@ export default function LessonScreen({ route, navigation }: any) {
 
             {/* ── 階段：quizzing ── */}
             {writePhase === 'quizzing' && (
-              <Text style={styles.quizTip}>按照筆順逐筆描寫，系統自動偵測</Text>
+              <Text style={styles.quizTip}>
+                {quizRound === 1
+                  ? '跟著數字，按筆順逐筆描寫'
+                  : '不看數字，憑記憶按筆順寫 💪'}
+              </Text>
             )}
 
             {/* ── 階段：done → 星級結果 ── */}
