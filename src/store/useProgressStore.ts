@@ -24,7 +24,7 @@ export const PLAYER_RANKS: PlayerRank[] = [
 ];
 
 /** 根據語言回傳正確的等級名稱 */
-export function getRankName(rank: PlayerRank, language: 'zh' | 'en'): string {
+export function getRankName(rank: PlayerRank, language: 'zh' | 'en' | 'sc'): string {
   return language === 'en' ? rank.name_en : rank.name;
 }
 
@@ -109,7 +109,7 @@ interface ProgressState {
   treasures: Record<string, number>; // treasureId → 擁有數量
 
   // i18n
-  language: 'zh' | 'en';
+  language: 'zh' | 'en' | 'sc';
 
   // ── Actions ──
   setUser: (id: string, name: string) => void;
@@ -134,7 +134,7 @@ interface ProgressState {
   /** 新增寶物到庫存 */
   addTreasures: (newTreasures: Treasure[]) => void;
   /** 切換介面語言 */
-  setLanguage: (lang: 'zh' | 'en') => void;
+  setLanguage: (lang: 'zh' | 'en' | 'sc') => void;
 }
 
 // ── 時間工具 ─────────────────────────────────────────────────────────

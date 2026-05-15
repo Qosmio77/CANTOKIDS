@@ -2,7 +2,7 @@
  * translations.ts — CantoKids 中英文介面字串
  */
 
-export type Language = 'zh' | 'en';
+export type Language = 'zh' | 'en' | 'sc';
 
 export const translations = {
   zh: {
@@ -21,6 +21,7 @@ export const translations = {
     language:        '語言',
     languageZh:      '繁體中文',
     languageEn:      'English',
+    languageSc:      '简体中文',
 
     // ── 底部導航 ──────────────────────────────────────────
     tabHome:    '首頁',
@@ -280,6 +281,7 @@ export const translations = {
     language:        'Language',
     languageZh:      '繁體中文',
     languageEn:      'English',
+    languageSc:      '简体中文',
 
     // ── Bottom Tabs ───────────────────────────────────────
     tabHome:    'Home',
@@ -521,6 +523,263 @@ export const translations = {
       'CantoKids does not collect any personal data from children.\nLearning progress is stored on-device only.\n\nCOPPA compliant.',
     supportMsg:
       'Email us at support@cantokids.app\n\nWe reply within 2 business days.',
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // 简体中文
+  // ════════════════════════════════════════════════════════════════
+  sc: {
+    // ── 通用 ──────────────────────────────────────────────
+    save:    '保存',
+    cancel:  '取消',
+    confirm: '确定',
+    close:   '关闭',
+    back:    '返回',
+    next:    '下一步',
+    done:    '完成',
+    yes:     '是',
+    no:      '否',
+
+    // ── 语言设定 ──────────────────────────────────────────
+    language:    '语言',
+    languageZh:  '繁體中文',
+    languageEn:  'English',
+    languageSc:  '简体中文',
+
+    // ── 底部导航 ──────────────────────────────────────────
+    tabHome:  '首页',
+    tabMap:   '地图',
+    tabQuiz:  '测验',
+
+    // ── HomeScreen ────────────────────────────────────────
+    greeting:          '你好，{name}！ 👋',
+    learningProgress:  '📊 学习进度',
+    progressSummary:   '已学 {learned} / {total} 个汉字 · 共 8 个级别',
+    energyTitle:       '⚡ 星力值',
+    energyCharged:     '已充能 {learned} / {total} 格',
+    energySubtext:     '🚀 正在为你的飞船充能…',
+    todayLearning:     '📖 今日学习',
+    startLearning:     '开始学习',
+    continueLearning:  '继续学习',
+    interactiveQuiz:   '互动测验',
+    practiceSpeaking:  '练习说话',
+    micComingSoon:     '🎙️ 麦克风已启动！（即将推出）',
+    myBadges:          '我的徽章',
+    badgesCollected:   '已收集 {n} / {total} 个',
+    treasureVault:     '我的宠物',
+    treasuresCollected:'已孵化 {n} / {total} 只',
+    dailyGoalTitle:    '学习目标',
+    dailyGoalProgress: '已学会 {n} / {total} 个字',
+    dailyGoalSubtext:  '继续加油！🚀',
+    categoriesTitle:   '学习主题',
+    seeAll:            '查看全部',
+    dailyChallenge:    '每日挑战',
+    catAnimals:        '动物',
+    catNature:         '自然',
+    catNumbers:        '数字',
+    catColors:         '颜色',
+    catFamily:         '家人',
+    catDaily:          '生活',
+    lessonsProgress:   '{n}/{total} 课',
+    levelLocked:       '需升级解锁',
+
+    // ── MapScreen ─────────────────────────────────────────
+    learningMap:    '🗺️ 学习地图',
+    mapSubtitle:    '共 100 个汉字 · 8 个级别',
+    unlockBanner:   '🔓 升级解锁全部 100 个汉字 — 前 10 课免费',
+    levelSeedling:  '🌱 幼苗级',
+    levelSapling:   '🌿 小树级',
+    levelTree:      '🌳 大树级',
+    levelSunflower: '🌻 向日葵级',
+    levelRainbow:   '🌈 彩虹级',
+    levelGalaxy:    '🌌 星河级',
+    levelBamboo:    '🎋 竹林级',
+    levelJade:      '💎 玉龙级',
+    levelWords:     '{n} 个汉字',
+    locked:         '🔒',
+    bossChallenge:  '⚔️ 挑战 Boss',
+    bossDefeated:   '✅ 已击败',
+    premiumRequired:'需要升级',
+
+    // ── 词语 & 成语 ───────────────────────────────────────────
+    levelVocab:          '📝 词语关卡',
+    levelIdiom:          '🏮 成语关卡',
+    vocabCount:          '{n} 个词语',
+    idiomCount:          '{n} 个成语',
+    vocabLocked:         '先学会 {n} 个汉字才解锁词语',
+    idiomLocked:         '先学会 {n} 个词语才解锁成语',
+    vocabUnlockHint:     '🎓 解锁词语关卡！',
+    idiomUnlockHint:     '🏮 解锁成语关卡！',
+    contentTypeChar:     '单字',
+    contentTypeWord:     '词语',
+    contentTypeIdiom:    '成语',
+    writeCharProgress:   '第 {current} / {total} 个字',
+    writingChar:         '✍️ 按笔顺写「{char}」',
+    watchingChar:        '👀 观看「{char}」示范…',
+    quizVocab:           '词语',
+    quizIdiom:           '成语',
+
+    // ── OnboardingScreen ──────────────────────────────────
+    onboardingWelcomeTitle: '欢迎来到 CantoKids！',
+    onboardingWelcomeDesc:
+      '一个为小朋友设计的广东话 & 繁体字学习应用程序。\n\n透过笔顺练习、聆听、测验\n让学习汉字变得有趣！',
+    onboardingFeatures: [
+      '✍️  笔顺动画练习',
+      '🔊  广东话发音',
+      '🎮  互动测验',
+      '🏅  徽章奖励',
+    ],
+    onboardingSetup:    '开始设置',
+    onboardingNameTitle:'你叫什么名字？',
+    onboardingNameHint: '输入小朋友的名字，让 App 更个性化！',
+    onboardingNamePlaceholder: '例如：小明',
+    onboardingNameNote: '（稍后可在家长控制台更改）',
+    onboardingReadyTitle: '{name}，准备好了！',
+    onboardingReadyDesc:
+      '从幼苗级开始，\n每天学几个汉字，\n慢慢成长为广东话高手！',
+    onboardingTipTitle: '💡 使用贴士',
+    onboardingTips: [
+      '• 长按字卡可聆听广东话发音',
+      '• 每日学习维持连胜火焰 🔥',
+      '• 家长可进入控制台查看进度',
+    ],
+    onboardingStart: '开始学习！',
+
+    // ── LessonScreen ──────────────────────────────────────
+    lessonClassroom:       '学习课室',
+    lessonMeaning:         '意思',
+    lessonExample:         '例句',
+    lessonStrokes:         '笔画数',
+    lessonLevel:           '级别',
+    lessonPractice:        '去练写 ✍️  →',
+    lessonCantonese:       '粤',
+    lessonMandarin:        '普',
+    lessonTab_meaning:     '📖 字义',
+    lessonTab_wordMeaning: '📖 词义',
+    lessonTab_writing:     '✍️ 练写',
+    lessonWritingDone:     '🎉 完成！',
+    lessonWriteAgain:      '← 再写',
+    lessonNextLesson:      '下一课 →',
+    lessonIdiomComponents: '组成汉字',
+    lessonStrokeCount:     '{n} 画',
+    lessonWatchDemo:       '👀 观看示范笔顺…',
+    lessonReady:           '✋ 准备好了吗？',
+    lessonQuizRound1:      '✍️ 第一次：跟着数字写「{char}」',
+    lessonQuizRound2:      '🧠 第二次：凭记忆写「{char}」',
+    lessonAllDone:         '🎉 全部完成！',
+    lessonTipRound1:       '跟着数字，按笔顺逐笔描写',
+    lessonTipRound2:       '不看数字，凭记忆按笔顺写 💪',
+    lessonReplayDemo:      '重播示范',
+    lessonStartPractice:   '开始练写',
+    lessonPerfect:         '完美！零错误 🏆',
+    lessonGood:            '做得好！继续加油 👍',
+    lessonOk:              '完成！多练几次会更棒 💪',
+    lessonStarsEarned:     '+ {n} ⭐',
+    lessonPracticeAgain:   '再练',
+    lessonNextBtn:         '下一课',
+    lessonBackToMap:       '返回地图',
+
+    // ── QuizMenuScreen ────────────────────────────────────
+    interactiveTest:   '🎮 互动测验',
+    quizSelectMode:    '选择关卡，再选测验方式',
+    quizListen:        '听音选字',
+    quizListenDesc:    '聆听粤语发音，选出正确的汉字',
+    quizRead:          '看字选音',
+    quizReadDesc:      '看汉字，选出正确的粤语拼音',
+    quizOddOne:        '找错字',
+    quizOddOneDesc:    '四个字中，找出意思不同的一个',
+    quizTabSeedling:   '幼苗',
+    quizTabSapling:    '小树',
+    quizTabTree:       '大树',
+    quizTabSunflower:  '向日葵',
+    quizTabRainbow:    '彩虹',
+    quizTabGalaxy:     '星河',
+    quizTabVocab:      '词语',
+    quizTabIdiom:      '成语',
+    quizTabAll:        '全部混',
+    quizInfoSeedling:  '🌱 幼苗级：山水火木日月人口手心（10 字）',
+    quizInfoSapling:   '🌳 小树级：猫狗鱼鸟花草雨风天地（10 字）',
+    quizInfoTree:      '🏆 大树级：书学玩食饮大小好多家（10 字）',
+    quizInfoSunflower: '🌻 向日葵级：一二三四五六七八九十（10 字）',
+    quizInfoRainbow:   '🌈 彩虹级：红橙黄绿蓝头眼耳鼻脚（10 字）',
+    quizInfoGalaxy:    '⭐ 星河级：爸妈哥姐弟妹爷嫲公婆（10 字）',
+    quizInfoAll:       '🌍 全部混合：60 个汉字随机出题',
+    quizLevelUpgrade:  '（需升级）',
+
+    // ── QuizScreen ───────────────────────────────────────
+    quizResultPerfect:    '全对！太厉害了！',
+    quizResultDone:       '测验完成！',
+    quizResultScore:      '{score} / {total} 题正确',
+    quizPlayAgain:        '再玩一次',
+    quizGoHome:           '回首页',
+    quizHintListen:       '听声音，选出正确的字',
+    quizHintReplay:       '点击重播',
+    quizHintRead:         '选出正确的粤语拼音',
+    quizHintFindWrong:    '哪一个字不属于同一类？',
+    quizHintFindWrongSub: '三个字属于同一主题，找出不同类的那个！',
+
+    // ── BossBattleScreen ─────────────────────────────────
+    bossHp:           'HP',
+    bossAttack:       '攻击！',
+    bossDefeatedMsg:  '🎉 击败了 {name}！',
+    bossTreasureDrop: '获得宝物！',
+    bossNextWave:     '继续挑战',
+    bossRetry:        '再试一次',
+    bossBattleTitle:  '⚔️ Boss 战',
+    bossVictoryTitle: 'Boss 击败！🎉',
+    bossVictoryDesc:  '你打败了 {name}，获得 {xp} XP！',
+    bossBackToMap:    '返回地图 🗺️',
+
+    // ── MapScreen ────────────────────────────────────────
+    mapParentBtn:     '家长',
+    mapLevelCount:    '{n} 个',
+    mapBossDefeated:  '{name} — 已击败！',
+    mapVocabLockFree: '升级高级版后解锁词语关卡',
+    mapIdiomLockFree: '升级高级版后解锁成语关卡',
+    mapLegendPremium: '高级版课程（进入家长区升级）',
+
+    // ── TreasureScreen ───────────────────────────────────
+    treasureTitle:    '🥚 我的宠物',
+    treasureAll:      '全部',
+    rarityCommon:     '普通',
+    rarityRare:       '罕见',
+    rarityEpic:       '史诗',
+    rarityLegendary:  '传说',
+    treasureUnknown:  '？？？',
+    treasureOwned:    '已拥有 x{n}',
+
+    // ── BadgeScreen ───────────────────────────────────────
+    badgeTitle:       '🏅 我的徽章',
+    badgeLocked:      '未解锁',
+    badgeProgress:    '{n}/{total}',
+
+    // ── SettingsScreen ────────────────────────────────────
+    settings:             '设置',
+    sectionProfile:       '👧 个人资料',
+    childName:            '小朋友名称',
+    nameEmpty:            '名字不能为空',
+    nameTooLong:          '名字最多 10 个字',
+    sectionWeb:           '🌐 网页版',
+    scanQrLogin:          '扫描登入网页版',
+    webHint:              '在电脑浏览器开启 {url}\n然后用手机扫描 QR Code 即可同步学习进度',
+    sectionApp:           '⚙️ 应用程序',
+    replayTutorial:       '重新播放引导教学',
+    privacyPolicy:        '隐私政策',
+    contactSupport:       '联系支援',
+    sectionLanguage:      '🌐 界面语言',
+    sectionAbout:         'ℹ️ 关于',
+    aboutVersion:         '版本',
+    aboutDictionary:      '词库',
+    aboutDictionaryValue: '100 个汉字 · 8 个级别',
+    aboutMadeBy:          '制作',
+    aboutMadeByValue:     'CantoKids Team 🌱',
+    parentDashboard:      '进入家长控制台',
+    replayConfirmTitle:   '重播引导',
+    replayConfirmMsg:     '确定要重新观看首次使用引导？',
+    privacyMsg:
+      'CantoKids 不收集任何儿童个人资料。\n学习进度仅储存在本机装置。\n\n符合 COPPA 规范。',
+    supportMsg:
+      '请电邮至 support@cantokids.app\n\n我们会于 2 个工作天内回覆。',
   },
 } as const;
 

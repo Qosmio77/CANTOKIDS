@@ -138,6 +138,17 @@ export default function SettingsScreen({ navigation }: any) {
               : <Ionicons name="ellipse-outline" size={22} color={Colors.textMuted} />
             }
           </TouchableOpacity>
+          <Divider />
+          <TouchableOpacity
+            style={styles.langRow}
+            onPress={() => setLanguage('sc')}
+          >
+            <Text style={styles.langLabel}>{t('languageSc')}</Text>
+            {language === 'sc'
+              ? <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />
+              : <Ionicons name="ellipse-outline" size={22} color={Colors.textMuted} />
+            }
+          </TouchableOpacity>
         </View>
 
         {/* 網頁版 */}
