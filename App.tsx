@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 import { useFonts } from 'expo-font';
 import AppNavigator from './src/navigation/AppNavigator';
 import { useProgressStore } from './src/store/useProgressStore';
@@ -14,27 +14,33 @@ import { Audio } from 'expo-av';
 export default function App() {
   const checkAndUpdateStreak = useProgressStore((s) => s.checkAndUpdateStreak);
 
-  const [fontsLoaded] = useFonts({
-    'JFOpenHuninn': require('./assets/fonts/jf-openhuninn.ttf'),
-  });
+  // Web: skip custom font loading (font URLs break under GitHub Pages subpath)
+  // Mobile: load JF Open Huninn font
+  const [fontsLoaded] = useFonts(
+    Platform.OS === 'web'
+      ? {}
+      : { 'JFOpenHuninn': require('./assets/fonts/jf-openhuninn.ttf') }
+  );
 
   useEffect(() => {
     checkAndUpdateStreak();
     initIAP().catch(() => {});
 
-    Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      allowsRecordingIOS: false,
-      staysActiveInBackground: false,
-    })
-      .then(() => {
-        initSFX().catch(() => {});
-        initBGM().catch(() => {});
+    if (Platform.OS !== 'web') {
+      Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        allowsRecordingIOS: false,
+        staysActiveInBackground: false,
       })
-      .catch(() => {
-        initSFX().catch(() => {});
-        initBGM().catch(() => {});
-      });
+        .then(() => {
+          initSFX().catch(() => {});
+          initBGM().catch(() => {});
+        })
+        .catch(() => {
+          initSFX().catch(() => {});
+          initBGM().catch(() => {});
+        });
+    }
   }, []);
 
   if (!fontsLoaded) {

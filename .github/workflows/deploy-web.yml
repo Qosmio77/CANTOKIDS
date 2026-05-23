@@ -35,11 +35,7 @@ jobs:
         run: CI=1 npx expo export --platform web --output-dir dist
         env:
           CI: true
-
-      - name: Fix asset paths for /CANTOKIDS/ subpath
-        run: |
-          sed -i 's|src="/_expo/|src="/CANTOKIDS/_expo/|g' dist/index.html
-          sed -i 's|href="/favicon.ico"|href="/CANTOKIDS/favicon.ico"|g' dist/index.html
+          EXPO_PUBLIC_BASE_PATH: /CANTOKIDS/
 
       - name: Add .nojekyll
         run: touch dist/.nojekyll
