@@ -18,15 +18,18 @@ import {
   Animated,
   Alert,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { useParentAuth } from '../../contexts/ParentAuthContext';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const PIN_LENGTH = 4;
 
 type Step = 'verify' | 'create' | 'confirm';
 
 export default function ParentLoginScreen({ navigation }: any) {
+  const { t } = useTranslation();
   const { hasPin, setPin, verifyPin } = useParentAuth();
 
   // 首次設定或驗證
@@ -70,7 +73,7 @@ export default function ParentLoginScreen({ navigation }: any) {
         navigation.replace('ParentDashboard');
       } else {
         setDigits('');
-        setErrorMsg('PIN 碼錯誤，請重試');
+        setErrorMsg(t('pinError'));
         triggerShake();
       }
     } else if (step === 'create') {
@@ -85,7 +88,7 @@ export default function ParentLoginScreen({ navigation }: any) {
         setDigits('');
         setFirstPin('');
         setStep('create');
-        setErrorMsg('兩次輸入不一致，請重新設定');
+        setErrorMsg(t('pinMismatch'));
         triggerShake();
       }
     }
@@ -94,15 +97,15 @@ export default function ParentLoginScreen({ navigation }: any) {
   const KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'];
 
   const titleText = () => {
-    if (step === 'create') return '設定家長 PIN 碼';
-    if (step === 'confirm') return '再次確認 PIN 碼';
-    return '家長驗證';
+    if (step === 'create') return t('pinTitleCreate');
+    if (step === 'confirm') return t('pinTitleConfirm');
+    return t('pinTitleVerify');
   };
 
   const subtitleText = () => {
-    if (step === 'create') return '請輸入 4 位數 PIN（首次設定）';
-    if (step === 'confirm') return '請再輸入一次確認';
-    return '請輸入家長 PIN 碼以繼續';
+    if (step === 'create') return t('pinSubCreate');
+    if (step === 'confirm') return t('pinSubConfirm');
+    return t('pinSubVerify');
   };
 
   return (
@@ -115,9 +118,9 @@ export default function ParentLoginScreen({ navigation }: any) {
       <View style={styles.container}>
         {/* 標題 */}
         <View style={styles.header}>
-          <Text style={styles.lockEmoji}>🔐</Text>
-          <Text style={styles.title}>{titleText()}</Text>
-          <Text style={styles.subtitle}>{subtitleText()}</Text>
+          <AppText style={styles.lockEmoji}>🔐</AppText>
+          <AppText style={styles.title}>{titleText()}</AppText>
+          <AppText style={styles.subtitle}>{subtitleText()}</AppText>
         </View>
 
         {/* PIN 點點顯示 */}
@@ -137,7 +140,7 @@ export default function ParentLoginScreen({ navigation }: any) {
         </Animated.View>
 
         {/* 錯誤訊息 */}
-        {!!errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
+        {!!errorMsg && <AppText style={styles.errorText}>{errorMsg}</AppText>}
 
         {/* 數字鍵盤 */}
         <View style={styles.keypad}>
@@ -149,7 +152,7 @@ export default function ParentLoginScreen({ navigation }: any) {
                   key={idx}
                   style={styles.keyBtn}
                   onPress={handleDelete}
-                  accessibilityLabel="刪除"
+                  accessibilityLabel={t('pinDeleteA11y')}
                 >
                   <Ionicons name="backspace-outline" size={24} color={Colors.text} />
                 </TouchableOpacity>
@@ -160,9 +163,9 @@ export default function ParentLoginScreen({ navigation }: any) {
                 key={idx}
                 style={styles.keyBtn}
                 onPress={() => handleDigit(key)}
-                accessibilityLabel={`數字 ${key}`}
+                accessibilityLabel={t('pinNumA11y').replace('{n}', key)}
               >
-                <Text style={styles.keyText}>{key}</Text>
+                <AppText style={styles.keyText}>{key}</AppText>
               </TouchableOpacity>
             );
           })}
@@ -173,13 +176,13 @@ export default function ParentLoginScreen({ navigation }: any) {
           <TouchableOpacity
             onPress={() =>
               Alert.alert(
-                '忘記 PIN 碼',
-                '如需重設 PIN 碼，請刪除並重新安裝應用程式。\n\n注意：這將清除所有學習進度。',
-                [{ text: '明白', style: 'cancel' }]
+                t('pinForgotTitle'),
+                t('pinForgotMsg'),
+                [{ text: t('pinForgotBtn'), style: 'cancel' }]
               )
             }
           >
-            <Text style={styles.forgotPin}>忘記 PIN 碼？</Text>
+            <AppText style={styles.forgotPin}>{t('pinForgotLink')}</AppText>
           </TouchableOpacity>
         )}
       </View>

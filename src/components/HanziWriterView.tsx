@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, ViewStyle } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 interface HanziWriterViewProps {
@@ -7,9 +7,12 @@ interface HanziWriterViewProps {
   width?: number;
   height?: number;
   showOutline?: boolean;
+  showCharacter?: boolean;
   animateOnLoad?: boolean;
+  containerStyle?: ViewStyle;
   onAnimationComplete?: () => void;
   onQuizComplete?: (totalMistakes: number) => void;
+  onReady?: () => void;
 }
 
 /** 父元件可透過 ref 呼叫的方法 */
@@ -20,6 +23,7 @@ export interface HanziWriterHandle {
   startQuizNoNumbers: () => void;
   /** 重新播放示範動畫（逐筆＋數字重新出現） */
   replay: () => void;
+  startDictationQuiz: () => void;
 }
 
 /**
@@ -37,9 +41,12 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
       width = 280,
       height = 280,
       showOutline = true,
+      showCharacter = true,
       animateOnLoad = true,
+      containerStyle,
       onAnimationComplete,
       onQuizComplete,
+      onReady,
     },
     ref
   ) => {
@@ -58,6 +65,7 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
       startQuiz:          () => sendAction('quiz'),
       startQuizNoNumbers: () => sendAction('quizNoNumbers'),
       replay:             () => sendAction('animate'),
+      startDictationQuiz: () => sendAction('dictationQuiz'),
     }));
 
     const htmlContent = `
@@ -265,6 +273,7 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
         height: ${height - 20},
         padding: 20,
         showOutline: ${showOutline},
+        showCharacter: ${showCharacter},
         strokeColor: '#1E40AF',
         outlineColor: '#BFDBFE',
         drawingColor: '#E8A000',
@@ -277,6 +286,9 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
       // 短暫延遲確保 SVG paths 已在 DOM 中
       setTimeout(function() { animateWithNums(); }, 80);
       ` : ''}
+      window.ReactNativeWebView && window.ReactNativeWebView.postMessage(
+        JSON.stringify({ type: 'writerReady' })
+      );
     }
 
     // ── 訊息處理 ─────────────────────────────────────────────────
@@ -298,6 +310,11 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
         startQuiz();
       } else if (msg.action === 'hideNumbers') {
         clearNumbers();
+      } else if (msg.action === 'dictationQuiz' && writer) {
+        clearNumbers();
+        writer.hideOutline();
+        writer.hideCharacter();
+        startQuiz();
       }
     });
 
@@ -328,6 +345,9 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
           case 'quizComplete':
             onQuizComplete?.(msg.totalMistakes ?? 0);
             break;
+          case 'writerReady':
+            onReady?.();
+            break;
           case 'offline':
             break;
           default:
@@ -341,7 +361,7 @@ const HanziWriterView = forwardRef<HanziWriterHandle, HanziWriterViewProps>(
     };
 
     return (
-      <View style={[styles.container, { width, height }]}>
+      <View style={[styles.container, { width, height }, containerStyle]}>
         <WebView
           ref={webViewRef}
           source={{ html: htmlContent }}

@@ -23,8 +23,14 @@ import {
   SafeAreaView,
   ScrollView,
   Animated,
+  Modal,
+  Dimensions,
 } from 'react-native';
+
+const { width: SW } = Dimensions.get('window');
+import AppText from '../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
+import PronButton from '../components/PronButton';
 import HanziWriterView, { HanziWriterHandle } from '../components/HanziWriterView';
 import BadgeUnlockModal from '../components/BadgeUnlockModal';
 import LevelUpModal from '../components/LevelUpModal';
@@ -40,6 +46,7 @@ import { getWordById, ALL_WORDS, SEEDLING_IDS, SAPLING_IDS, TREE_IDS, SUNFLOWER_
 import { buildBadgeStats, getNewlyUnlockedBadges, Badge } from '../services/badgeService';
 import { Colors } from '../theme/colors';
 import { useTranslation } from '../hooks/useTranslation';
+import { playSFX } from '../services/sfxService';
 
 type Tab = 'meaning' | 'write';
 type WritePhase = 'animating' | 'ready' | 'quizzing' | 'done';
@@ -52,9 +59,9 @@ function starsForMistakes(mistakes: number): number {
 
 /** 根據字數決定主字體大小 */
 function mainCharFontSize(charLength: number): number {
-  if (charLength <= 1) return 72;
-  if (charLength <= 2) return 56;
-  return 40;
+  if (charLength <= 1) return 130;
+  if (charLength <= 2) return 72;
+  return 52;
 }
 
 const CONTENT_TYPE_COLOR: Record<string, string> = {
@@ -89,7 +96,7 @@ export default function LessonScreen({ route, navigation }: any) {
 
   const {
     markWordLearned, addStars, unlockLesson,
-    playerXP, addXP,
+    playerXP, addXP, completeDailyTask,
   } = useProgressStore();
   const { playWord } = useAudio();
 
@@ -126,6 +133,7 @@ export default function LessonScreen({ route, navigation }: any) {
 
   // ── 完成整個課程 ──────────────────────────────────────────────────
   const finalizeLesson = useCallback((totalMistakes: number) => {
+    playSFX('complete');
     const stars = starsForMistakes(totalMistakes);
 
     const storeBefore = useProgressStore.getState();
@@ -139,6 +147,8 @@ export default function LessonScreen({ route, navigation }: any) {
     markWordLearned(wordId);
     addStars(stars);
     unlockLesson(lessonId + 1);
+    completeDailyTask('learn');   // 每日任務：學習新字
+    completeDailyTask('practice'); // 每日任務：完成筆順練習
 
     const xpGained = XP_PER_WORD_LEARNED + (totalMistakes === 0 ? XP_PER_QUIZ_CORRECT * 2 : XP_PER_QUIZ_CORRECT);
     const leveledUp = addXP(xpGained);
@@ -256,12 +266,18 @@ export default function LessonScreen({ route, navigation }: any) {
     contentType === 'idiom' ? 'contentTypeIdiom' : 'contentTypeChar'
   );
 
-  // 字義分頁：級別顯示
+  // 字義分頁：級別顯示（使用 t() 以支援多語言）
   const levelEmoji: Record<string, string> = {
-    seedling:  '🌱幼苗', sapling: '🌳小樹', tree: '🏆大樹',
-    sunflower: '🌻向日葵', rainbow: '🌈彩虹', galaxy: '⭐星河',
-    bamboo:    '🎋竹林', jade: '💎玉龍',
-    vocab:     '📝詞語', idiom: '🏮成語',
+    seedling:  t('levelSeedling'),
+    sapling:   t('levelSapling'),
+    tree:      t('levelTree'),
+    sunflower: t('levelSunflower'),
+    rainbow:   t('levelRainbow'),
+    galaxy:    t('levelGalaxy'),
+    bamboo:    t('levelBamboo'),
+    jade:      t('levelJade'),
+    vocab:     t('levelVocab'),
+    idiom:     t('levelIdiom'),
   };
 
   return (
@@ -270,13 +286,13 @@ export default function LessonScreen({ route, navigation }: any) {
       <View style={styles.wordHeader}>
         {/* 內容類型徽章 */}
         <View style={[styles.contentTypeBadge, { backgroundColor: typeColor + '1A', borderColor: typeColor + '60' }]}>
-          <Text style={[styles.contentTypeBadgeText, { color: typeColor }]}>{typeLabel}</Text>
+          <AppText style={[styles.contentTypeBadgeText, { color: typeColor }]}>{typeLabel}</AppText>
         </View>
 
         {/* 主字顯示 */}
-        <Text style={[styles.mainChar, { fontSize: mainCharFontSize(word.character.length) }]}>
+        <AppText style={[styles.mainChar, { fontSize: mainCharFontSize(word.character.length) }]}>
           {word.character}
-        </Text>
+        </AppText>
 
         {/* 發音徽章 */}
         {isMultiChar ? (
@@ -289,56 +305,36 @@ export default function LessonScreen({ route, navigation }: any) {
                   key={i}
                   style={styles.componentBadge}
                   onPress={() => playWord((word.components ?? [])[i] ?? word.character, 'cantonese')}
-                  accessibilityLabel={`粵語：${jp}`}
+                  accessibilityLabel={t('lessonA11yCantonese').replace('{p}', jp)}
                 >
-                  <Text style={styles.componentChar}>{(word.components ?? [])[i]}</Text>
-                  <Text style={styles.componentJyutping}>{jp}</Text>
+                  <AppText style={styles.componentChar}>{(word.components ?? [])[i]}</AppText>
+                  <AppText style={styles.componentJyutping}>{jp}</AppText>
                 </TouchableOpacity>
               ))}
             </View>
             {/* 整體播放 */}
             <View style={styles.pronunciationRow}>
-              <TouchableOpacity
-                style={styles.pronBadge}
-                onPress={() => playMultiChar('cantonese')}
-                accessibilityLabel={`粵語：${word.jyutping}`}
-              >
-                <Ionicons name="volume-high" size={14} color="#1D4ED8" />
-                <Text style={styles.pronLabel}>{t('lessonCantonese')}</Text>
-                <Text style={styles.pronText}>{word.jyutping}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.pronBadge, styles.pronBadgeMandarin]}
-                onPress={() => playMultiChar('mandarin')}
-                accessibilityLabel={`普通話：${word.pinyin}`}
-              >
-                <Ionicons name="volume-high" size={14} color="#7C3AED" />
-                <Text style={[styles.pronLabel, styles.pronLabelMandarin]}>{t('lessonMandarin')}</Text>
-                <Text style={styles.pronText}>{word.pinyin}</Text>
-              </TouchableOpacity>
+              <View style={styles.pronBadge}>
+                <PronButton lang="cantonese" size="lg" onPress={() => playMultiChar('cantonese')} />
+                <AppText style={styles.pronText}>{word.jyutping}</AppText>
+              </View>
+              <View style={[styles.pronBadge, styles.pronBadgeMandarin]}>
+                <PronButton lang="mandarin" size="lg" onPress={() => playMultiChar('mandarin')} />
+                <AppText style={styles.pronText}>{word.pinyin}</AppText>
+              </View>
             </View>
           </View>
         ) : (
-          /* 單字：原有發音徽章 */
+          /* 單字：發音徽章 */
           <View style={styles.pronunciationRow}>
-            <TouchableOpacity
-              style={styles.pronBadge}
-              onPress={() => playWord(word.character, 'cantonese')}
-              accessibilityLabel={`粵語發音：${word.jyutping}`}
-            >
-              <Ionicons name="volume-high" size={14} color="#1D4ED8" />
-              <Text style={styles.pronLabel}>{t('lessonCantonese')}</Text>
-              <Text style={styles.pronText}>{word.jyutping}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.pronBadge, styles.pronBadgeMandarin]}
-              onPress={() => playWord(word.character, 'mandarin')}
-              accessibilityLabel={`普通話發音：${word.pinyin}`}
-            >
-              <Ionicons name="volume-high" size={14} color="#7C3AED" />
-              <Text style={[styles.pronLabel, styles.pronLabelMandarin]}>{t('lessonMandarin')}</Text>
-              <Text style={styles.pronText}>{word.pinyin}</Text>
-            </TouchableOpacity>
+            <View style={styles.pronBadge}>
+              <PronButton lang="cantonese" size="lg" onPress={() => playWord(word.character, 'cantonese')} />
+              <AppText style={styles.pronText}>{word.jyutping}</AppText>
+            </View>
+            <View style={[styles.pronBadge, styles.pronBadgeMandarin]}>
+              <PronButton lang="mandarin" size="lg" onPress={() => playWord(word.character, 'mandarin')} />
+              <AppText style={styles.pronText}>{word.pinyin}</AppText>
+            </View>
           </View>
         )}
       </View>
@@ -348,20 +344,20 @@ export default function LessonScreen({ route, navigation }: any) {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'meaning' && styles.tabActive]}
           onPress={() => setActiveTab('meaning')}
-          accessibilityLabel="字義分頁"
+          accessibilityLabel={t('lessonA11yMeaningTab')}
         >
-          <Text style={[styles.tabText, activeTab === 'meaning' && styles.tabTextActive]}>
+          <AppText style={[styles.tabText, activeTab === 'meaning' && styles.tabTextActive]}>
             {contentType === 'character' ? t('lessonTab_meaning') : t('lessonTab_wordMeaning')}
-          </Text>
+          </AppText>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'write' && styles.tabActive]}
           onPress={() => setActiveTab('write')}
           accessibilityLabel={t('lessonTab_writing')}
         >
-          <Text style={[styles.tabText, activeTab === 'write' && styles.tabTextActive]}>
+          <AppText style={[styles.tabText, activeTab === 'write' && styles.tabTextActive]}>
             {t('lessonTab_writing')}
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
 
@@ -372,36 +368,36 @@ export default function LessonScreen({ route, navigation }: any) {
         {activeTab === 'meaning' && (
           <View style={styles.meaningContainer}>
             <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>{t('lessonMeaning')}</Text>
-              <Text style={styles.infoValue}>{word.meaning_zh}</Text>
-              <Text style={styles.infoValueEn}>{word.meaning_en}</Text>
+              <AppText style={styles.infoLabel}>{t('lessonMeaning')}</AppText>
+              <AppText style={styles.infoValue}>{word.meaning_zh}</AppText>
+              <AppText style={styles.infoValueEn}>{word.meaning_en}</AppText>
             </View>
 
             <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>{t('lessonExample')}</Text>
-              <Text style={styles.exampleSentence}>{word.example_sentence}</Text>
+              <AppText style={styles.infoLabel}>{t('lessonExample')}</AppText>
+              <AppText style={styles.exampleSentence}>{word.example_sentence}</AppText>
             </View>
 
             <View style={styles.infoCardRow}>
               <View style={[styles.infoCard, styles.infoCardHalf]}>
-                <Text style={styles.infoLabel}>{t('lessonStrokes')}</Text>
-                <Text style={styles.infoValue}>{t('lessonStrokeCount').replace('{n}', String(word.stroke_count))}</Text>
+                <AppText style={styles.infoLabel}>{t('lessonStrokes')}</AppText>
+                <AppText style={styles.infoValue}>{t('lessonStrokeCount').replace('{n}', String(word.stroke_count))}</AppText>
               </View>
               <View style={[styles.infoCard, styles.infoCardHalf]}>
-                <Text style={styles.infoLabel}>{t('lessonLevel')}</Text>
-                <Text style={[styles.infoValue, { color: typeColor }]}>{levelEmoji[word.level] ?? word.level}</Text>
+                <AppText style={styles.infoLabel}>{t('lessonLevel')}</AppText>
+                <AppText style={[styles.infoValue, { color: typeColor }]}>{levelEmoji[word.level] ?? word.level}</AppText>
               </View>
             </View>
 
             {/* 成語額外說明 */}
             {contentType === 'idiom' && (
               <View style={[styles.infoCard, styles.idiomNote]}>
-                <Text style={styles.infoLabel}>{t('lessonIdiomComponents')}</Text>
+                <AppText style={styles.infoLabel}>{t('lessonIdiomComponents')}</AppText>
                 <View style={styles.idiomCharsRow}>
                   {(word.components ?? []).map((c, i) => (
                     <View key={i} style={styles.idiomCharItem}>
-                      <Text style={styles.idiomCharText}>{c}</Text>
-                      <Text style={styles.idiomCharJp}>{(word.componentJyutping ?? [])[i]}</Text>
+                      <AppText style={styles.idiomCharText}>{c}</AppText>
+                      <AppText style={styles.idiomCharJp}>{(word.componentJyutping ?? [])[i]}</AppText>
                     </View>
                   ))}
                 </View>
@@ -411,155 +407,156 @@ export default function LessonScreen({ route, navigation }: any) {
             <TouchableOpacity
               style={[styles.nextTabBtn, { backgroundColor: typeColor }]}
               onPress={() => setActiveTab('write')}
-              accessibilityLabel="前往練寫分頁"
+              accessibilityLabel={t('lessonA11yGoToWrite')}
             >
-              <Text style={styles.nextTabBtnText}>{t('lessonPractice')}</Text>
+              <AppText style={styles.nextTabBtnText}>{t('lessonPractice')}</AppText>
               <Ionicons name="arrow-forward" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
         )}
 
         {/* ═══════════════════════════════
-            練寫分頁
+            練寫分頁 — 完成結果（寫字過程在全屏 Modal）
         ═══════════════════════════════ */}
-        {activeTab === 'write' && (
+        {activeTab === 'write' && writePhase === 'done' && (
           <View style={styles.writeContainer}>
-            {/* 多字進度指示器 */}
-            {isMultiChar && writePhase !== 'done' && (
-              <View style={styles.charProgressRow}>
-                {writeComponents.map((c, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.charProgressItem,
-                      i === charIndex && styles.charProgressItemActive,
-                      i < charIndex  && styles.charProgressItemDone,
-                    ]}
-                  >
-                    <Text style={[
-                      styles.charProgressText,
-                      i === charIndex && styles.charProgressTextActive,
-                      i < charIndex  && styles.charProgressTextDone,
-                    ]}>
-                      {c}
-                    </Text>
-                    {i < charIndex && (
-                      <Ionicons
-                        name="checkmark"
-                        size={10}
-                        color={Colors.success}
-                        style={styles.charProgressCheck}
-                      />
-                    )}
-                  </View>
-                ))}
-              </View>
-            )}
+            <Animated.View style={[styles.completeBox, { transform: [{ scale: starScale }] }]}>
+              <View style={styles.starRow}>{starRow(earnedStars)}</View>
+              <AppText style={styles.completeText}>
+                {earnedStars === 3
+                  ? t('lessonPerfect')
+                  : earnedStars === 2
+                  ? t('lessonGood')
+                  : t('lessonOk')}
+              </AppText>
+              <AppText style={styles.starsEarned}>{t('lessonStarsEarned').replace('{n}', String(earnedStars))}</AppText>
 
-            {/* 狀態提示文字 */}
-            <Text style={styles.writeHint}>
-              {writePhase === 'animating' && (isMultiChar
-                ? t('watchingChar').replace('{char}', currentWriteChar)
-                : t('lessonWatchDemo'))}
-              {writePhase === 'ready'    && t('lessonReady')}
-              {writePhase === 'quizzing' && quizRound === 1 && t('lessonQuizRound1').replace('{char}', currentWriteChar)}
-              {writePhase === 'quizzing' && quizRound === 2 && t('lessonQuizRound2').replace('{char}', currentWriteChar)}
-              {writePhase === 'done'     && t('lessonAllDone')}
-            </Text>
-
-            {/* HanziWriter 畫布
-                key 改變 → 強制重新掛載，載入新字 */}
-            {writePhase !== 'done' && (
-              <HanziWriterView
-                key={`${word.id}-char-${charIndex}`}
-                ref={writerRef}
-                character={currentWriteChar}
-                width={280}
-                height={280}
-                showOutline={true}
-                animateOnLoad={true}
-                onAnimationComplete={handleAnimationComplete}
-                onQuizComplete={handleQuizComplete}
-              />
-            )}
-
-            {/* ── 階段：ready → 開始練寫 ── */}
-            {writePhase === 'ready' && (
-              <View style={styles.phaseActions}>
+              <View style={styles.doneButtons}>
                 <TouchableOpacity
-                  style={styles.replayBtn}
-                  onPress={() => writerRef.current?.replay()}
-                  accessibilityLabel="重播示範動畫"
+                  style={styles.replayQuizBtn}
+                  onPress={handleReplay}
+                  accessibilityLabel={t('lessonPracticeAgain')}
                 >
-                  <Ionicons name="refresh" size={18} color={Colors.primary} />
-                  <Text style={styles.replayBtnText}>{t('lessonReplayDemo')}</Text>
+                  <Ionicons name="refresh" size={16} color={Colors.primary} />
+                  <AppText style={styles.replayQuizBtnText}>{t('lessonPracticeAgain')}</AppText>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.startQuizBtn, { backgroundColor: typeColor }]}
-                  onPress={handleStartQuiz}
-                  accessibilityLabel={t('lessonStartPractice')}
-                >
-                  <Ionicons name="pencil" size={20} color="#fff" />
-                  <Text style={styles.startQuizBtnText}>{t('lessonStartPractice')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
 
-            {/* ── 階段：quizzing ── */}
-            {writePhase === 'quizzing' && (
-              <Text style={styles.quizTip}>
-                {quizRound === 1 ? t('lessonTipRound1') : t('lessonTipRound2')}
-              </Text>
-            )}
-
-            {/* ── 階段：done → 星級結果 ── */}
-            {writePhase === 'done' && (
-              <Animated.View style={[styles.completeBox, { transform: [{ scale: starScale }] }]}>
-                <View style={styles.starRow}>{starRow(earnedStars)}</View>
-                <Text style={styles.completeText}>
-                  {earnedStars === 3
-                    ? t('lessonPerfect')
-                    : earnedStars === 2
-                    ? t('lessonGood')
-                    : t('lessonOk')}
-                </Text>
-                <Text style={styles.starsEarned}>{t('lessonStarsEarned').replace('{n}', String(earnedStars))}</Text>
-
-                <View style={styles.doneButtons}>
+                {nextWordId ? (
                   <TouchableOpacity
-                    style={styles.replayQuizBtn}
-                    onPress={handleReplay}
-                    accessibilityLabel={t('lessonPracticeAgain')}
+                    style={styles.nextBtn}
+                    onPress={handleNextLesson}
+                    accessibilityLabel={t('lessonNextBtn')}
                   >
-                    <Ionicons name="refresh" size={16} color={Colors.primary} />
-                    <Text style={styles.replayQuizBtnText}>{t('lessonPracticeAgain')}</Text>
+                    <AppText style={styles.nextBtnText}>{t('lessonNextBtn')}</AppText>
+                    <Ionicons name="arrow-forward" size={18} color="#fff" />
                   </TouchableOpacity>
-
-                  {nextWordId ? (
-                    <TouchableOpacity
-                      style={styles.nextBtn}
-                      onPress={handleNextLesson}
-                      accessibilityLabel={t('lessonNextBtn')}
-                    >
-                      <Text style={styles.nextBtnText}>{t('lessonNextBtn')}</Text>
-                      <Ionicons name="arrow-forward" size={18} color="#fff" />
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.nextBtn}
-                      onPress={() => navigation.goBack()}
-                      accessibilityLabel={t('lessonBackToMap')}
-                    >
-                      <Ionicons name="map" size={18} color="#fff" />
-                      <Text style={styles.nextBtnText}>{t('lessonBackToMap')}</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </Animated.View>
-            )}
+                ) : (
+                  <TouchableOpacity
+                    style={styles.nextBtn}
+                    onPress={() => navigation.goBack()}
+                    accessibilityLabel={t('lessonBackToMap')}
+                  >
+                    <Ionicons name="map" size={18} color="#fff" />
+                    <AppText style={styles.nextBtnText}>{t('lessonBackToMap')}</AppText>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </Animated.View>
           </View>
         )}
       </ScrollView>
+
+      {/* ══ 全屏寫字 Modal ══ */}
+      <Modal
+        visible={activeTab === 'write' && writePhase !== 'done'}
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <SafeAreaView style={styles.writingModal}>
+          {/* 返回鍵 */}
+          <TouchableOpacity
+            style={styles.modalCloseBtn}
+            onPress={() => setActiveTab('meaning')}
+          >
+            <Ionicons name="close" size={26} color={Colors.text} />
+          </TouchableOpacity>
+
+          {/* 多字進度指示器 */}
+          {isMultiChar && (
+            <View style={styles.modalProgressRow}>
+              {writeComponents.map((c, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.charProgressItem,
+                    i === charIndex && styles.charProgressItemActive,
+                    i < charIndex  && styles.charProgressItemDone,
+                  ]}
+                >
+                  <AppText style={[
+                    styles.charProgressText,
+                    i === charIndex && styles.charProgressTextActive,
+                    i < charIndex  && styles.charProgressTextDone,
+                  ]}>{c}</AppText>
+                  {i < charIndex && (
+                    <Ionicons name="checkmark" size={10} color={Colors.success} style={styles.charProgressCheck} />
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* 提示文字 */}
+          <AppText style={styles.modalHint}>
+            {writePhase === 'animating' && (isMultiChar
+              ? t('watchingChar').replace('{char}', currentWriteChar)
+              : t('lessonWatchDemo'))}
+            {writePhase === 'ready'    && t('lessonReady')}
+            {writePhase === 'quizzing' && quizRound === 1 && t('lessonQuizRound1').replace('{char}', currentWriteChar)}
+            {writePhase === 'quizzing' && quizRound === 2 && t('lessonQuizRound2').replace('{char}', currentWriteChar)}
+          </AppText>
+
+          {/* HanziWriter — 全屏大畫布 */}
+          <HanziWriterView
+            key={`${word.id}-char-${charIndex}`}
+            ref={writerRef}
+            character={currentWriteChar}
+            width={SW}
+            height={SW}
+            showOutline={true}
+            animateOnLoad={true}
+            onAnimationComplete={handleAnimationComplete}
+            onQuizComplete={handleQuizComplete}
+          />
+
+          {/* Ready：重播 + 開始練寫 */}
+          {writePhase === 'ready' && (
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.replayBtn}
+                onPress={() => writerRef.current?.replay()}
+              >
+                <Ionicons name="refresh" size={18} color={Colors.primary} />
+                <AppText style={styles.replayBtnText}>{t('lessonReplayDemo')}</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.startQuizBtn, { backgroundColor: typeColor }]}
+                onPress={handleStartQuiz}
+              >
+                <Ionicons name="pencil" size={20} color="#fff" />
+                <AppText style={styles.startQuizBtnText}>{t('lessonStartPractice')}</AppText>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Quizzing：提示 */}
+          {writePhase === 'quizzing' && (
+            <AppText style={styles.quizTip}>
+              {quizRound === 1 ? t('lessonTipRound1') : t('lessonTipRound2')}
+            </AppText>
+          )}
+        </SafeAreaView>
+      </Modal>
 
       {/* 徽章解鎖彈窗 */}
       <BadgeUnlockModal
@@ -584,14 +581,14 @@ export default function LessonScreen({ route, navigation }: any) {
 
 // ── Styles ──────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFFBEB' },
+  safeArea: { flex: 1, backgroundColor: Colors.primaryBg },
 
   // 頂部大字
   wordHeader: {
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 16,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: Colors.primaryBg,
     gap: 8,
   },
   contentTypeBadge: {
@@ -622,15 +619,24 @@ const styles = StyleSheet.create({
   componentBadgeRow: { flexDirection: 'row', gap: 10, justifyContent: 'center' },
   componentBadge: {
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.primaryBg,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowColor: '#C4BFA8',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)',
+    borderRightColor: 'rgba(180,175,155,0.4)',
   },
   componentChar:     { fontSize: 22, fontWeight: '700', color: '#1F2937' },
   componentJyutping: { fontSize: 12, color: '#1D4ED8', fontWeight: '600' },
@@ -638,7 +644,7 @@ const styles = StyleSheet.create({
   // 分頁
   tabRow: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.primaryBg,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
@@ -652,13 +658,22 @@ const styles = StyleSheet.create({
   // 字義分頁
   meaningContainer: { gap: 14 },
   infoCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.primaryBg,
     borderRadius: 14,
     padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
+    shadowColor: '#C4BFA8',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)',
+    borderRightColor: 'rgba(180,175,155,0.4)',
   },
   infoCardRow: { flexDirection: 'row', gap: 12 },
   infoCardHalf: { flex: 1 },
@@ -693,14 +708,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.primaryBg,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowColor: '#C4BFA8',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)',
+    borderRightColor: 'rgba(180,175,155,0.4)',
   },
   charProgressItem: {
     alignItems: 'center',
@@ -708,17 +732,29 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 10,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
+    backgroundColor: Colors.primaryMuted,
   },
   charProgressItemActive: {
     backgroundColor: '#FEF3C7',
-    borderColor: '#F59E0B',
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: '#F59E0B',
+    borderLeftColor: '#F59E0B',
+    borderBottomColor: '#F59E0B',
+    borderRightColor: '#F59E0B',
   },
   charProgressItemDone: {
     backgroundColor: '#ECFDF5',
-    borderColor: '#6EE7B7',
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: '#6EE7B7',
+    borderLeftColor: '#6EE7B7',
+    borderBottomColor: '#6EE7B7',
+    borderRightColor: '#6EE7B7',
   },
   charProgressText:       { fontSize: 18, fontWeight: '600', color: '#9CA3AF' },
   charProgressTextActive: { color: '#92400E' },
@@ -732,12 +768,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primaryMuted,
+    backgroundColor: Colors.primaryBg,
     paddingVertical: 14,
     borderRadius: 14,
     gap: 6,
-    borderWidth: 2,
-    borderColor: Colors.primaryLight,
+    shadowColor: '#C4BFA8',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)',
+    borderRightColor: 'rgba(180,175,155,0.4)',
   },
   replayBtnText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
   startQuizBtn: {
@@ -756,12 +803,23 @@ const styles = StyleSheet.create({
   completeBox: {
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: Colors.primaryBg,
     borderRadius: 20,
     padding: 24,
     width: '100%',
-    borderWidth: 2,
-    borderColor: '#6EE7B7',
+    shadowColor: '#C4BFA8',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)',
+    borderRightColor: 'rgba(180,175,155,0.4)',
   },
   starRow: { flexDirection: 'row', gap: 6 },
   completeText: { fontSize: 18, fontWeight: '700', color: '#065F46', textAlign: 'center' },
@@ -772,12 +830,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primaryMuted,
+    backgroundColor: Colors.primaryBg,
     paddingVertical: 12,
     borderRadius: 12,
     gap: 5,
-    borderWidth: 2,
-    borderColor: Colors.primaryLight,
+    shadowColor: '#C4BFA8',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)',
+    borderRightColor: 'rgba(180,175,155,0.4)',
   },
   replayQuizBtnText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
   nextBtn: {
@@ -791,4 +860,36 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   nextBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+
+  // ── 全屏寫字 Modal ──
+  writingModal: {
+    flex: 1,
+    backgroundColor: Colors.primaryBg,
+    alignItems: 'center',
+    paddingTop: 8,
+    paddingBottom: 20,
+  },
+  modalCloseBtn: {
+    alignSelf: 'flex-start',
+    marginLeft: 16,
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: Colors.primaryMuted,
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#C4BFA8', shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.5, shadowRadius: 6, elevation: 4,
+    borderTopWidth: 1, borderLeftWidth: 1, borderBottomWidth: 1, borderRightWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.95)', borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)', borderRightColor: 'rgba(180,175,155,0.4)',
+  },
+  modalProgressRow: {
+    flexDirection: 'row', gap: 10, marginTop: 8, marginBottom: 4,
+  },
+  modalHint: {
+    fontSize: 14, color: Colors.textMuted, fontWeight: '500',
+    textAlign: 'center', marginVertical: 6,
+  },
+  modalActions: {
+    flexDirection: 'row', gap: 12, paddingHorizontal: 20,
+    width: '100%', marginTop: 12,
+  },
 });

@@ -15,6 +15,7 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
+import AppText from '../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { useProgressStore } from '../store/useProgressStore';
@@ -104,8 +105,8 @@ export default function QuizMenuScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>{t('interactiveTest')}</Text>
-        <Text style={styles.subtitle}>{t('quizSelectMode')}</Text>
+        <AppText style={styles.title}>{t('interactiveTest')}</AppText>
+        <AppText style={styles.subtitle}>{t('quizSelectMode')}</AppText>
 
         {/* 詞庫級別選擇器 */}
         <View style={styles.levelRow}>
@@ -123,10 +124,10 @@ export default function QuizMenuScreen({ navigation }: any) {
                 onPress={() => handleLevelSelect(opt)}
                 accessibilityLabel={`${opt.label}${locked ? t('quizLevelUpgrade') : ''}`}
               >
-                <Text style={styles.levelTabEmoji}>{locked ? '🔒' : opt.emoji}</Text>
-                <Text style={[styles.levelTabLabel, active && styles.levelTabLabelActive]}>
+                <AppText style={styles.levelTabEmoji}>{locked ? '🔒' : opt.emoji}</AppText>
+                <AppText style={[styles.levelTabLabel, active && styles.levelTabLabelActive]}>
                   {opt.label}
-                </Text>
+                </AppText>
               </TouchableOpacity>
             );
           })}
@@ -134,29 +135,76 @@ export default function QuizMenuScreen({ navigation }: any) {
 
         {/* 目前選中的級別說明 */}
         <View style={styles.levelInfo}>
-          <Text style={styles.levelInfoText}>
+          <AppText style={styles.levelInfoText}>
             {LEVEL_INFO[selectedLevel] ?? ''}
-          </Text>
+          </AppText>
         </View>
 
         {/* 測驗模式 */}
         {QUIZ_MODES.map((mode) => (
           <TouchableOpacity
             key={mode.type}
-            style={[styles.modeCard, { backgroundColor: mode.bgColor, borderColor: mode.color }]}
+            style={[styles.modeCard, { backgroundColor: mode.bgColor }]}
             onPress={() =>
               navigation.navigate('Quiz', { quizType: mode.type, quizLevel: selectedLevel })
             }
             accessibilityLabel={`${mode.title}，${mode.description}`}
           >
-            <Text style={styles.modeEmoji}>{mode.emoji}</Text>
+            <AppText style={styles.modeEmoji}>{mode.emoji}</AppText>
             <View style={styles.modeInfo}>
-              <Text style={[styles.modeTitle, { color: mode.color }]}>{mode.title}</Text>
-              <Text style={styles.modeDesc}>{mode.description}</Text>
+              <AppText style={[styles.modeTitle, { color: mode.color }]}>{mode.title}</AppText>
+              <AppText style={styles.modeDesc}>{mode.description}</AppText>
             </View>
             <Ionicons name="chevron-forward" size={22} color={mode.color} />
           </TouchableOpacity>
         ))}
+
+        {/* 默書模式 */}
+        <View style={styles.divider} />
+        <AppText style={styles.sectionLabel}>{t('dictationMode')}</AppText>
+
+        <TouchableOpacity
+          style={[styles.modeCard, { backgroundColor: '#FFF7ED' }]}
+          onPress={() => navigation.navigate('Dictation', { mode: 'listen' })}
+          accessibilityLabel={t('dictationListen')}
+        >
+          <AppText style={styles.modeEmoji}>🎧</AppText>
+          <View style={styles.modeInfo}>
+            <AppText style={[styles.modeTitle, { color: '#C2410C' }]}>{t('dictationListen')}</AppText>
+            <AppText style={styles.modeDesc}>{t('dictationListenDesc')}</AppText>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color="#C2410C" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.modeCard, { backgroundColor: '#F0FDF4' }]}
+          onPress={() => navigation.navigate('Dictation', { mode: 'memory' })}
+          accessibilityLabel={t('dictationMemory')}
+        >
+          <AppText style={styles.modeEmoji}>🧠</AppText>
+          <View style={styles.modeInfo}>
+            <AppText style={[styles.modeTitle, { color: '#15803D' }]}>{t('dictationMemory')}</AppText>
+            <AppText style={styles.modeDesc}>{t('dictationMemoryDesc')}</AppText>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color="#15803D" />
+        </TouchableOpacity>
+
+        {/* 練習紙模式 */}
+        <View style={styles.divider} />
+        <AppText style={styles.sectionLabel}>{t('sheetMode')}</AppText>
+
+        <TouchableOpacity
+          style={[styles.modeCard, { backgroundColor: '#F8F4FF' }]}
+          onPress={() => navigation.navigate('PracticeSheet')}
+          accessibilityLabel={t('sheetMode')}
+        >
+          <AppText style={styles.modeEmoji}>📄</AppText>
+          <View style={styles.modeInfo}>
+            <AppText style={[styles.modeTitle, { color: '#7C3AED' }]}>{t('sheetMode')}</AppText>
+            <AppText style={styles.modeDesc}>{t('sheetDesc')}</AppText>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color="#7C3AED" />
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -174,22 +222,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: Colors.white,
-    borderWidth: 2,
-    borderColor: Colors.border,
+    backgroundColor: Colors.primaryBg,
+    shadowColor: '#C4BFA8',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)',
+    borderRightColor: 'rgba(180,175,155,0.4)',
     gap: 2,
   },
-  levelTabActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryMuted },
+  levelTabActive: {
+    backgroundColor: Colors.primaryMuted,
+    borderTopColor: Colors.primary,
+    borderLeftColor: Colors.primary,
+    borderBottomColor: Colors.primary,
+    borderRightColor: Colors.primary,
+  },
   levelTabLocked: { opacity: 0.55 },
   levelTabEmoji: { fontSize: 18 },
   levelTabLabel: { fontSize: 10, fontWeight: '600', color: Colors.textSecondary },
   levelTabLabelActive: { color: Colors.primary },
 
   levelInfo: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.primaryBg,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
+    shadowColor: '#C4BFA8',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)',
+    borderRightColor: 'rgba(180,175,155,0.4)',
   },
   levelInfoText: { fontSize: 13, color: Colors.textSecondary },
 
@@ -198,15 +276,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderRadius: 18,
-    borderWidth: 2,
     gap: 16,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 6,
   },
   modeEmoji: { fontSize: 36 },
   modeInfo: { flex: 1 },
   modeTitle: { fontSize: 18, fontWeight: '700', marginBottom: 4 },
   modeDesc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
+  divider: { height: 1, backgroundColor: Colors.borderLight, marginVertical: 6 },
+  sectionLabel: { fontSize: 16, fontWeight: '700', color: Colors.textSecondary, marginBottom: 4 },
 });

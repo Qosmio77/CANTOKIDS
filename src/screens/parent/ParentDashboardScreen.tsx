@@ -23,16 +23,19 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { useProgressStore } from '../../store/useProgressStore';
 import { useParentAuth } from '../../contexts/ParentAuthContext';
 import { fetchProducts, IAPProduct, FREE_LESSON_LIMIT, purchasePremium, restorePurchases, IAPProductId } from '../../services/iap/iapService';
 import { ALL_WORDS } from '../../data/allWords';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const WORDS = ALL_WORDS;
 
 export default function ParentDashboardScreen({ navigation }: any) {
+  const { t } = useTranslation();
   const {
     totalStars, wordProgress, streakDays, perfectQuizzes,
     isPremium, setPremium, resetProgress, displayName,
@@ -67,16 +70,16 @@ export default function ParentDashboardScreen({ navigation }: any) {
 
   const handleResetProgress = () => {
     Alert.alert(
-      '重設學習進度',
-      '這將清除所有星星、已學漢字及測驗記錄，無法復原。確定嗎？',
+      t('resetProgressTitle'),
+      t('resetProgressMsg'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: '確定重設',
+          text: t('resetProgressConfirm'),
           style: 'destructive',
           onPress: () => {
             resetProgress();
-            Alert.alert('完成', '學習進度已重設。');
+            Alert.alert(t('resetDoneTitle'), t('resetDoneMsg'));
           },
         },
       ]
@@ -90,9 +93,9 @@ export default function ParentDashboardScreen({ navigation }: any) {
     setPurchasing(false);
     if (ok) {
       setPremium(true);
-      Alert.alert('🎉 升級成功', '已解鎖全部課程！感謝支持 CantoKids。');
+      Alert.alert(t('purchaseSuccess'), t('purchaseSuccessMsg'));
     } else {
-      Alert.alert('購買失敗', '請稍後再試，或聯繫客服。');
+      Alert.alert(t('purchaseFail'), t('purchaseFailMsg'));
     }
   };
 
@@ -102,9 +105,9 @@ export default function ParentDashboardScreen({ navigation }: any) {
     setLoadingIAP(false);
     if (ok) {
       setPremium(true);
-      Alert.alert('恢復成功', '已恢復您的訂閱。');
+      Alert.alert(t('restoreSuccess'), t('restoreSuccessMsg'));
     } else {
-      Alert.alert('找不到購買記錄', '如有疑問請聯繫 App Store / Google Play 客服。');
+      Alert.alert(t('restoreFail'), t('restoreFailMsg'));
     }
   };
 
@@ -120,7 +123,7 @@ export default function ParentDashboardScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>家長控制台</Text>
+        <AppText style={styles.topTitle}>{t('parentTitle')}</AppText>
         <TouchableOpacity onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={24} color={Colors.textMuted} />
         </TouchableOpacity>
@@ -128,51 +131,51 @@ export default function ParentDashboardScreen({ navigation }: any) {
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* 孩子名稱 */}
-        <Text style={styles.childName}>👧 {displayName} 的學習報告</Text>
+        <AppText style={styles.childName}>{t('childReport').replace('{name}', displayName)}</AppText>
 
         {/* 學習概覽卡片 */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>📊 學習概覽</Text>
+          <AppText style={styles.cardTitle}>{t('overviewTitle')}</AppText>
           <View style={styles.statsGrid}>
-            <StatBox icon="star" color={Colors.primary} label="累積星星" value={String(totalStars)} />
-            <StatBox icon="flame" color="#EF4444" label="連續天數" value={`${streakDays} 天`} />
-            <StatBox icon="book" color={Colors.cantonese} label="已學漢字" value={`${learnedCount} / ${WORDS.length}`} />
-            <StatBox icon="trophy" color="#F59E0B" label="完美測驗" value={`${perfectQuizzes} 次`} />
+            <StatBox icon="star" color={Colors.primary} label={t('parentStatStars')} value={String(totalStars)} />
+            <StatBox icon="flame" color="#EF4444" label={t('parentStatStreak')} value={`${streakDays}`} />
+            <StatBox icon="book" color={Colors.cantonese} label={t('parentStatLearned')} value={`${learnedCount} / ${WORDS.length}`} />
+            <StatBox icon="trophy" color="#F59E0B" label={t('parentStatPerfect')} value={`${perfectQuizzes}`} />
           </View>
         </View>
 
         {/* 答題成績 */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>🎯 答題成績</Text>
+          <AppText style={styles.cardTitle}>{t('quizScoreTitle')}</AppText>
           <View style={styles.accuracyRow}>
             <View style={styles.accuracyBar}>
               <View style={[styles.accuracyFill, { width: `${accuracyPct}%` }]} />
             </View>
-            <Text style={styles.accuracyPct}>{accuracyPct}%</Text>
+            <AppText style={styles.accuracyPct}>{accuracyPct}%</AppText>
           </View>
-          <Text style={styles.accuracyDetail}>
-            共答題 {totalAnswers} 次，答對 {totalCorrect} 次
-          </Text>
+          <AppText style={styles.accuracyDetail}>
+            {t('accuracyDetail').replace('{total}', String(totalAnswers)).replace('{correct}', String(totalCorrect))}
+          </AppText>
         </View>
 
         {/* 需加強字詞 */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>⚠️ 需要加強</Text>
+          <AppText style={styles.cardTitle}>{t('weakWordsTitle')}</AppText>
           {weakWords.length === 0 ? (
-            <Text style={styles.emptyText}>太棒了！沒有需要特別加強的字詞 🎉</Text>
+            <AppText style={styles.emptyText}>{t('weakWordsEmpty')}</AppText>
           ) : (
             <View style={styles.weakWordList}>
               {weakWords.map((w) => (
                 <View key={w.id} style={styles.weakWordRow}>
-                  <Text style={styles.weakChar}>{w.character}</Text>
+                  <AppText style={styles.weakChar}>{w.character}</AppText>
                   <View style={styles.weakInfo}>
-                    <Text style={styles.weakMeaning}>{w.meaning_zh}</Text>
-                    <Text style={styles.weakJyutping}>{w.jyutping}</Text>
+                    <AppText style={styles.weakMeaning}>{w.meaning_zh}</AppText>
+                    <AppText style={styles.weakJyutping}>{w.jyutping}</AppText>
                   </View>
                   <View style={styles.wrongBadge}>
-                    <Text style={styles.wrongBadgeText}>
+                    <AppText style={styles.wrongBadgeText}>
                       ✗ {wordProgress[w.id]?.wrongCount ?? 0}
-                    </Text>
+                    </AppText>
                   </View>
                 </View>
               ))}
@@ -182,18 +185,18 @@ export default function ParentDashboardScreen({ navigation }: any) {
 
         {/* 訂閱管理 */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>💎 訂閱方案</Text>
+          <AppText style={styles.cardTitle}>{t('subscriptionTitle')}</AppText>
 
           {isPremium ? (
             <View style={styles.premiumBadge}>
               <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
-              <Text style={styles.premiumText}>已訂閱高級版 — 全部課程已解鎖</Text>
+              <AppText style={styles.premiumText}>{t('premiumActive')}</AppText>
             </View>
           ) : (
             <>
-              <Text style={styles.freeNote}>
-                目前免費版：前 {FREE_LESSON_LIMIT} 課免費，升級解鎖全部 {WORDS.length} 個漢字
-              </Text>
+              <AppText style={styles.freeNote}>
+                {t('freeNote').replace('{free}', String(FREE_LESSON_LIMIT)).replace('{total}', String(WORDS.length))}
+              </AppText>
 
               {products.map((p) => (
                 <TouchableOpacity
@@ -207,10 +210,10 @@ export default function ParentDashboardScreen({ navigation }: any) {
                   ) : (
                     <>
                       <View>
-                        <Text style={styles.purchaseBtnTitle}>{p.title}</Text>
-                        <Text style={styles.purchaseBtnDesc}>{p.description}</Text>
+                        <AppText style={styles.purchaseBtnTitle}>{p.title}</AppText>
+                        <AppText style={styles.purchaseBtnDesc}>{p.description}</AppText>
                       </View>
-                      <Text style={styles.purchasePrice}>{p.price}</Text>
+                      <AppText style={styles.purchasePrice}>{p.price}</AppText>
                     </>
                   )}
                 </TouchableOpacity>
@@ -224,7 +227,7 @@ export default function ParentDashboardScreen({ navigation }: any) {
                 {loadingIAP ? (
                   <ActivityIndicator color={Colors.primary} size="small" />
                 ) : (
-                  <Text style={styles.restoreBtnText}>恢復已購買項目</Text>
+                  <AppText style={styles.restoreBtnText}>{t('restoreBtn')}</AppText>
                 )}
               </TouchableOpacity>
             </>
@@ -233,19 +236,19 @@ export default function ParentDashboardScreen({ navigation }: any) {
 
         {/* 危險區 */}
         <View style={[styles.card, styles.dangerCard]}>
-          <Text style={styles.cardTitle}>⚙️ 進階設定</Text>
+          <AppText style={styles.cardTitle}>{t('advancedTitle')}</AppText>
 
           {/* 修復 H-3: 提供更改 PIN 的方式，避免逼用戶刪除 App */}
           <TouchableOpacity
             style={styles.changePinBtn}
             onPress={() =>
               Alert.alert(
-                '更改 PIN 碼',
-                '確定要重設家長 PIN 碼嗎？系統會要求重新設定新 PIN。',
+                t('changePinTitle'),
+                t('changePinMsg'),
                 [
-                  { text: '取消', style: 'cancel' },
+                  { text: t('cancel'), style: 'cancel' },
                   {
-                    text: '確定更改',
+                    text: t('changePinConfirm'),
                     onPress: () => {
                       useProgressStore.getState().setParentPin('');
                       logout();
@@ -257,14 +260,14 @@ export default function ParentDashboardScreen({ navigation }: any) {
             }
           >
             <Ionicons name="key-outline" size={18} color={Colors.primary} />
-            <Text style={styles.changePinBtnText}>更改家長 PIN 碼</Text>
+            <AppText style={styles.changePinBtnText}>{t('changePinBtn')}</AppText>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.dangerBtn} onPress={handleResetProgress}>
             <Ionicons name="refresh" size={18} color={Colors.error} />
-            <Text style={styles.dangerBtnText}>重設學習進度</Text>
+            <AppText style={styles.dangerBtnText}>{t('resetProgressBtn')}</AppText>
           </TouchableOpacity>
-          <Text style={styles.dangerNote}>重設進度會清除學習記錄，但保留家長設定與訂閱狀態。</Text>
+          <AppText style={styles.dangerNote}>{t('dangerNote')}</AppText>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -283,8 +286,8 @@ function StatBox({
   return (
     <View style={styles.statBox}>
       <Ionicons name={icon} size={22} color={color} />
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <AppText style={styles.statValue}>{value}</AppText>
+      <AppText style={styles.statLabel}>{label}</AppText>
     </View>
   );
 }

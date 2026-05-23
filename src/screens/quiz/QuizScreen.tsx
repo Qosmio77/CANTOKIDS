@@ -7,10 +7,12 @@ import {
   SafeAreaView,
   Animated,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Word } from '../../types/word';
 import { useAudio } from '../../hooks/useAudio';
+import { playSFX } from '../../services/sfxService';
 import { useProgressStore } from '../../store/useProgressStore';
 import {
   SEEDLING_WORDS, SAPLING_WORDS, TREE_WORDS,
@@ -100,11 +102,13 @@ function generateFindWrongQuestions(): QuizQuestion[] {
   for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
     // 隨機選一個主題級別（majority），取 3 個未用過的字
     const majorityLevel = levelKeys[Math.floor(Math.random() * levelKeys.length)];
-    const majorityPool = shuffle(groups[majorityLevel].filter((w) => !usedMajorityWords.has(w.id)));
+    let majorityPool = shuffle(groups[majorityLevel].filter((w) => !usedMajorityWords.has(w.id)));
     if (majorityPool.length < 3) {
-      usedMajorityWords.clear(); // 用完了就重置
+      // 用完了就重置，重新從整個 level 取
+      usedMajorityWords.clear();
+      majorityPool = shuffle(groups[majorityLevel]);
     }
-    const majority = shuffle(groups[majorityLevel]).slice(0, 3);
+    const majority = majorityPool.slice(0, 3);
     majority.forEach((w) => usedMajorityWords.add(w.id));
 
     // 選一個來自其他級別的入侵者（odd one out）
@@ -148,7 +152,7 @@ export default function QuizScreen({ route, navigation }: any) {
 
   const { t } = useTranslation();
   const { playWord } = useAudio();
-  const { addStars, recordAnswer, incrementPerfectQuiz, incrementTotalAnswers } = useProgressStore();
+  const { addStars, recordAnswer, incrementPerfectQuiz, incrementTotalAnswers, language, completeDailyTask } = useProgressStore();
 
   const [questions, setQuestions] = useState<QuizQuestion[]>(() => generateQuestions(quizType, quizLevel));
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -190,6 +194,7 @@ export default function QuizScreen({ route, navigation }: any) {
       );
 
       addStars(stars);
+      completeDailyTask('quiz'); // 每日任務：完成測驗
       if (score === QUESTIONS_PER_ROUND) {
         incrementPerfectQuiz();
       }
@@ -247,9 +252,11 @@ export default function QuizScreen({ route, navigation }: any) {
     if (correct) {
       triggerBounce();
       setScore((s) => s + 1);
+      playSFX('correct');
     } else {
       triggerShake();
       playWord(currentQ.correct.character, 'cantonese');
+      playSFX('wrong');
     }
 
     // 修復 C-2: 用 timeoutRef 追蹤，修復 M-2: 用 functional updater
@@ -285,13 +292,13 @@ export default function QuizScreen({ route, navigation }: any) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.resultContainer}>
-          <Text style={styles.resultEmoji}>{score === QUESTIONS_PER_ROUND ? '🎉' : '👏'}</Text>
-          <Text style={styles.resultTitle}>
+          <AppText style={styles.resultEmoji}>{score === QUESTIONS_PER_ROUND ? '🎉' : '👏'}</AppText>
+          <AppText style={styles.resultTitle}>
             {score === QUESTIONS_PER_ROUND ? t('quizResultPerfect') : t('quizResultDone')}
-          </Text>
-          <Text style={styles.resultScore}>
+          </AppText>
+          <AppText style={styles.resultScore}>
             {t('quizResultScore').replace('{score}', String(score)).replace('{total}', String(QUESTIONS_PER_ROUND))}
-          </Text>
+          </AppText>
           <View style={styles.starsRow}>
             {[1, 2, 3].map((i) => (
               <Ionicons key={i} name={i <= stars ? 'star' : 'star-outline'} size={36} color={Colors.primary} />
@@ -299,10 +306,10 @@ export default function QuizScreen({ route, navigation }: any) {
           </View>
           <TouchableOpacity style={styles.retryBtn} onPress={handleRetry}>
             <Ionicons name="refresh" size={20} color={Colors.white} />
-            <Text style={styles.retryBtnText}>{t('quizPlayAgain')}</Text>
+            <AppText style={styles.retryBtnText}>{t('quizPlayAgain')}</AppText>
           </TouchableOpacity>
           <TouchableOpacity style={styles.homeBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.homeBtnText}>{t('quizGoHome')}</Text>
+            <AppText style={styles.homeBtnText}>{t('quizGoHome')}</AppText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -315,13 +322,13 @@ export default function QuizScreen({ route, navigation }: any) {
     <SafeAreaView style={styles.safeArea}>
       {/* 進度條 */}
       <View style={styles.progressRow}>
-        <Text style={styles.progressLabel}>{currentIndex + 1} / {QUESTIONS_PER_ROUND}</Text>
+        <AppText style={styles.progressLabel}>{currentIndex + 1} / {QUESTIONS_PER_ROUND}</AppText>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${((currentIndex + 1) / QUESTIONS_PER_ROUND) * 100}%` }]} />
         </View>
         <View style={styles.scoreTag}>
           <Ionicons name="star" size={14} color={Colors.primary} />
-          <Text style={styles.scoreText}>{score}</Text>
+          <AppText style={styles.scoreText}>{score}</AppText>
         </View>
       </View>
 
@@ -329,20 +336,20 @@ export default function QuizScreen({ route, navigation }: any) {
       <View style={styles.questionArea}>
         {currentQ.type === 'listenPick' && (
           <>
-            <Text style={styles.questionHint}>{t('quizHintListen')}</Text>
+            <AppText style={styles.questionHint}>{t('quizHintListen')}</AppText>
             <TouchableOpacity
               style={styles.speakerBtn}
               onPress={() => playWord(currentQ.correct.character, 'cantonese')}
               accessibilityLabel={t('quizHintReplay')}
             >
               <Ionicons name="volume-high" size={52} color={Colors.cantonese} />
-              <Text style={styles.speakerLabel}>{t('quizHintReplay')}</Text>
+              <AppText style={styles.speakerLabel}>{t('quizHintReplay')}</AppText>
             </TouchableOpacity>
           </>
         )}
         {currentQ.type === 'readPick' && (
           <>
-            <Text style={styles.questionHint}>{t('quizHintRead')}</Text>
+            <AppText style={styles.questionHint}>{t('quizHintRead')}</AppText>
             <Animated.Text style={[styles.questionChar, { transform: [{ scale: scaleAnim }] }]}>
               {currentQ.correct.character}
             </Animated.Text>
@@ -350,8 +357,8 @@ export default function QuizScreen({ route, navigation }: any) {
         )}
         {currentQ.type === 'findWrong' && (
           <>
-            <Text style={styles.questionHint}>{t('quizHintFindWrong')}</Text>
-            <Text style={styles.questionSubhint}>{t('quizHintFindWrongSub')}</Text>
+            <AppText style={styles.questionHint}>{t('quizHintFindWrong')}</AppText>
+            <AppText style={styles.questionSubhint}>{t('quizHintFindWrongSub')}</AppText>
           </>
         )}
       </View>
@@ -373,19 +380,19 @@ export default function QuizScreen({ route, navigation }: any) {
               style={cardStyle}
               onPress={() => handleSelect(option)}
               disabled={!!selectedOption}
-              accessibilityLabel={`選項：${option.character}，${option.meaning_zh}`}
+              accessibilityLabel={t('quizA11yOption').replace('{char}', option.character).replace('{meaning}', option.meaning_zh)}
             >
               {/* 修復 C-4: 所有模式都正確渲染選項內容 */}
               {(currentQ.type === 'listenPick' || currentQ.type === 'findWrong') && (
-                <Text style={styles.optionChar}>{option.character}</Text>
+                <AppText style={styles.optionChar}>{option.character}</AppText>
               )}
               {currentQ.type === 'findWrong' && (
-                <Text style={styles.optionMeaning}>{option.meaning_zh}</Text>
+                <AppText style={styles.optionMeaning}>{option.meaning_zh}</AppText>
               )}
               {currentQ.type === 'readPick' && (
                 <>
-                  <Text style={styles.optionJyutping}>{option.jyutping}</Text>
-                  <Text style={styles.optionPinyin}>{option.pinyin}</Text>
+                  <AppText style={styles.optionJyutping}>{option.jyutping}</AppText>
+                  <AppText style={styles.optionPinyin}>{option.pinyin}</AppText>
                 </>
               )}
               {selectedOption && isAnswer && (
@@ -402,15 +409,20 @@ export default function QuizScreen({ route, navigation }: any) {
       {/* 答題後回饋 */}
       {selectedOption && (
         <View style={[styles.feedbackBar, isCorrect ? styles.feedbackCorrect : styles.feedbackWrong]}>
-          <Text style={styles.feedbackText}>
-            {currentQ.type === 'findWrong'
-              ? isCorrect
-                ? `✅ 正確！「${currentQ.correct.character}」（${currentQ.correct.meaning_zh}）與其他字不同類`
-                : `❌ 不同類的是「${currentQ.correct.character}」— ${currentQ.correct.meaning_zh}`
-              : isCorrect
-                ? `✅ 正確！「${currentQ.correct.character}」— ${currentQ.correct.meaning_zh}`
-                : `❌ 正確答案是「${currentQ.correct.character}」— ${currentQ.correct.meaning_zh}`}
-          </Text>
+          <AppText style={styles.feedbackText}>
+            {(() => {
+              const char = currentQ.correct.character;
+              const meaning = language === 'en' ? currentQ.correct.meaning_en : currentQ.correct.meaning_zh;
+              if (currentQ.type === 'findWrong') {
+                return isCorrect
+                  ? t('quizFeedbackFindCorrect').replace('{char}', char).replace('{meaning}', meaning)
+                  : t('quizFeedbackFindWrong').replace('{char}', char).replace('{meaning}', meaning);
+              }
+              return isCorrect
+                ? t('quizFeedbackCorrect').replace('{char}', char).replace('{meaning}', meaning)
+                : t('quizFeedbackWrong').replace('{char}', char).replace('{meaning}', meaning);
+            })()}
+          </AppText>
         </View>
       )}
 
@@ -446,20 +458,39 @@ const styles = StyleSheet.create({
   optionCard: {
     width: '45%',
     paddingVertical: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.primaryBg,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-    borderWidth: 2,
-    borderColor: Colors.primaryLight,
+    shadowColor: '#C4BFA8',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)',
+    borderRightColor: 'rgba(180,175,155,0.4)',
     gap: 4,
   },
-  optionCorrect: { backgroundColor: Colors.successLight, borderColor: Colors.success },
-  optionWrong: { backgroundColor: Colors.errorLight, borderColor: Colors.error },
+  optionCorrect: {
+    backgroundColor: Colors.successLight,
+    borderTopColor: Colors.success,
+    borderLeftColor: Colors.success,
+    borderBottomColor: Colors.success,
+    borderRightColor: Colors.success,
+  },
+  optionWrong: {
+    backgroundColor: Colors.errorLight,
+    borderTopColor: Colors.error,
+    borderLeftColor: Colors.error,
+    borderBottomColor: Colors.error,
+    borderRightColor: Colors.error,
+  },
   optionChar: { fontSize: 36, fontWeight: '700', color: Colors.text },
   optionMeaning: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
   optionJyutping: { fontSize: 20, fontWeight: '700', color: Colors.cantonese },
@@ -474,8 +505,26 @@ const styles = StyleSheet.create({
   resultTitle: { fontSize: 26, fontWeight: '800', color: Colors.text },
   resultScore: { fontSize: 18, color: Colors.textSecondary },
   starsRow: { flexDirection: 'row', gap: 8, marginVertical: 8 },
-  retryBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary, paddingVertical: 14, paddingHorizontal: 32, borderRadius: 16, gap: 8, marginTop: 8 },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary, paddingVertical: 14, paddingHorizontal: 32, borderRadius: 16, gap: 8, marginTop: 8, shadowColor: '#8B6000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 5 },
   retryBtnText: { fontSize: 16, fontWeight: '700', color: Colors.white },
-  homeBtn: { paddingVertical: 12 },
+  homeBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    backgroundColor: Colors.primaryBg,
+    borderRadius: 14,
+    shadowColor: '#C4BFA8',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)',
+    borderRightColor: 'rgba(180,175,155,0.4)',
+  },
   homeBtnText: { fontSize: 15, color: Colors.textSecondary },
 });

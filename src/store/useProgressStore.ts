@@ -8,24 +8,27 @@ export interface PlayerRank {
   level: number;
   name: string;      // 繁體中文名稱
   name_en: string;   // English name
+  name_sc: string;   // 简体中文名称
   emoji: string;
   xpRequired: number;
 }
 
 export const PLAYER_RANKS: PlayerRank[] = [
-  { level: 1, name: '蛋蛋', name_en: 'Egg',        emoji: '🥚', xpRequired: 0    },
-  { level: 2, name: '小雞', name_en: 'Chick',      emoji: '🐣', xpRequired: 100  },
-  { level: 3, name: '黃雀', name_en: 'Sparrow',    emoji: '🐤', xpRequired: 250  },
-  { level: 4, name: '小鷹', name_en: 'Eagle',      emoji: '🦅', xpRequired: 500  },
-  { level: 5, name: '幼獅', name_en: 'Lion Cub',   emoji: '🦁', xpRequired: 800  },
-  { level: 6, name: '小龍', name_en: 'Dragon',     emoji: '🐉', xpRequired: 1200 },
-  { level: 7, name: '星靈', name_en: 'Star Spirit', emoji: '🌟', xpRequired: 1800 },
-  { level: 8, name: '傳說', name_en: 'Legend',     emoji: '👑', xpRequired: 2500 },
+  { level: 1, name: '蛋蛋', name_en: 'Egg',         name_sc: '蛋蛋', emoji: '🥚', xpRequired: 0    },
+  { level: 2, name: '小雞', name_en: 'Chick',       name_sc: '小鸡', emoji: '🐣', xpRequired: 100  },
+  { level: 3, name: '黃雀', name_en: 'Sparrow',     name_sc: '黄雀', emoji: '🐤', xpRequired: 250  },
+  { level: 4, name: '小鷹', name_en: 'Eagle',       name_sc: '小鹰', emoji: '🦅', xpRequired: 500  },
+  { level: 5, name: '幼獅', name_en: 'Lion Cub',    name_sc: '幼狮', emoji: '🦁', xpRequired: 800  },
+  { level: 6, name: '小龍', name_en: 'Dragon',      name_sc: '小龙', emoji: '🐉', xpRequired: 1200 },
+  { level: 7, name: '星靈', name_en: 'Star Spirit', name_sc: '星灵', emoji: '🌟', xpRequired: 1800 },
+  { level: 8, name: '傳說', name_en: 'Legend',      name_sc: '传说', emoji: '👑', xpRequired: 2500 },
 ];
 
 /** 根據語言回傳正確的等級名稱 */
 export function getRankName(rank: PlayerRank, language: 'zh' | 'en' | 'sc'): string {
-  return language === 'en' ? rank.name_en : rank.name;
+  if (language === 'en') return rank.name_en;
+  if (language === 'sc') return rank.name_sc;
+  return rank.name;
 }
 
 export const XP_PER_WORD_LEARNED  = 15;          // 學會新字
@@ -49,22 +52,30 @@ export function getNextRank(currentLevel: number): PlayerRank | null {
 export interface BossDef {
   id: string;
   levelKey: 'seedling' | 'sapling' | 'tree' | 'sunflower' | 'rainbow' | 'galaxy' | 'bamboo' | 'jade';
-  name: string;
+  name: string;       // 繁體中文
+  name_en: string;    // English
+  name_sc: string;    // 简体中文
   emoji: string;
   hp: number;           // 需要答對幾題才能擊敗
   color: string;
   bgColor: string;
 }
 
+export function getBossName(boss: BossDef, language: string): string {
+  if (language === 'en') return boss.name_en;
+  if (language === 'sc') return boss.name_sc;
+  return boss.name;
+}
+
 export const BOSSES: BossDef[] = [
-  { id: 'boss_seedling',  levelKey: 'seedling',  name: '幼苗小龍',   emoji: '🐲', hp: 10, color: '#10B981', bgColor: '#ECFDF5' },
-  { id: 'boss_sapling',   levelKey: 'sapling',   name: '森林狐狸',   emoji: '🦊', hp: 10, color: '#F59E0B', bgColor: '#FFFBEB' },
-  { id: 'boss_tree',      levelKey: 'tree',      name: '大樹猛虎',   emoji: '🐯', hp: 10, color: '#EF4444', bgColor: '#FEF2F2' },
-  { id: 'boss_sunflower', levelKey: 'sunflower', name: '數字精靈',   emoji: '🌻', hp: 10, color: '#F97316', bgColor: '#FFF7ED' },
-  { id: 'boss_rainbow',   levelKey: 'rainbow',   name: '彩虹守護者', emoji: '🌈', hp: 10, color: '#8B5CF6', bgColor: '#F5F3FF' },
-  { id: 'boss_galaxy',    levelKey: 'galaxy',    name: '星河神龍',   emoji: '🌟', hp: 10, color: '#3B82F6', bgColor: '#EFF6FF' },
-  { id: 'boss_bamboo',   levelKey: 'bamboo',   name: '竹林書生',   emoji: '🦉', hp: 10, color: '#059669', bgColor: '#ECFDF5' },
-  { id: 'boss_jade',     levelKey: 'jade',     name: '玉龍聖賢',   emoji: '🐉', hp: 10, color: '#4F46E5', bgColor: '#EEF2FF' },
+  { id: 'boss_seedling',  levelKey: 'seedling',  name: '幼苗小龍',   name_en: 'Seedling Dragon', name_sc: '幼苗小龙',   emoji: '🐲', hp: 10, color: '#10B981', bgColor: '#ECFDF5' },
+  { id: 'boss_sapling',   levelKey: 'sapling',   name: '森林狐狸',   name_en: 'Forest Fox',      name_sc: '森林狐狸',   emoji: '🦊', hp: 10, color: '#F59E0B', bgColor: '#FFFBEB' },
+  { id: 'boss_tree',      levelKey: 'tree',      name: '大樹猛虎',   name_en: 'Tree Tiger',       name_sc: '大树猛虎',   emoji: '🐯', hp: 10, color: '#EF4444', bgColor: '#FEF2F2' },
+  { id: 'boss_sunflower', levelKey: 'sunflower', name: '數字精靈',   name_en: 'Number Sprite',    name_sc: '数字精灵',   emoji: '🌻', hp: 10, color: '#F97316', bgColor: '#FFF7ED' },
+  { id: 'boss_rainbow',   levelKey: 'rainbow',   name: '彩虹守護者', name_en: 'Rainbow Guardian', name_sc: '彩虹守护者', emoji: '🌈', hp: 10, color: '#8B5CF6', bgColor: '#F5F3FF' },
+  { id: 'boss_galaxy',    levelKey: 'galaxy',    name: '星河神龍',   name_en: 'Galaxy Dragon',    name_sc: '星河神龙',   emoji: '🌟', hp: 10, color: '#3B82F6', bgColor: '#EFF6FF' },
+  { id: 'boss_bamboo',   levelKey: 'bamboo',   name: '竹林書生',   name_en: 'Bamboo Scholar',    name_sc: '竹林书生',   emoji: '🦉', hp: 10, color: '#059669', bgColor: '#ECFDF5' },
+  { id: 'boss_jade',     levelKey: 'jade',     name: '玉龍聖賢',   name_en: 'Jade Sage',          name_sc: '玉龙圣贤',   emoji: '🐉', hp: 10, color: '#4F46E5', bgColor: '#EEF2FF' },
 ];
 
 // ────────────────────────────────────────────────────────────────────
@@ -111,6 +122,36 @@ interface ProgressState {
   // i18n
   language: 'zh' | 'en' | 'sc';
 
+  // BGM
+  bgmEnabled: boolean;
+
+  // ── Creature System ──────────────────────────────────────
+  /** creatureId → { stage, xp, unlockedAt, customName } */
+  creatureProgress: Record<string, {
+    stage: 0 | 1 | 2 | 3;
+    xp: number;
+    unlockedAt: number;
+    customName?: string;
+  }>;
+  foodCount: number;
+
+  // ── Daily Tasks ──────────────────────────────────────────
+  /** 今天已完成的任務 id 列表（每天重置） */
+  dailyTasksDone: string[];
+  /** 最後一次任務日期 'YYYY-MM-DD' */
+  dailyTasksDate: string;
+  /** 今天已領取食物獎勵 */
+  dailyFoodClaimed: boolean;
+
+  // ── Hatchling Challenge ───────────────────────────────────
+  hatchlingStartDate: string;      // '' = 未開始
+  hatchlingDaysDone: number;       // 已完成天數 (0–7)
+  hatchlingComplete: boolean;
+  hatchlingLastAdvance: string;    // 最後推進日期 'YYYY-MM-DD'
+
+  // Placement test
+  placementDone: boolean;
+
   // ── Actions ──
   setUser: (id: string, name: string) => void;
   markWordLearned: (wordId: number) => void;
@@ -135,6 +176,32 @@ interface ProgressState {
   addTreasures: (newTreasures: Treasure[]) => void;
   /** 切換介面語言 */
   setLanguage: (lang: 'zh' | 'en' | 'sc') => void;
+  /** 切換背景音樂 */
+  toggleBGM: () => void;
+
+  // Creature actions
+  /** 解鎖生物（擊敗對應 Boss 時呼叫） */
+  unlockCreature: (creatureId: string) => void;
+  /** 餵食生物，回傳是否剛進化 */
+  feedCreature: (creatureId: string, amount: number) => boolean;
+  /** 幫生物命名 */
+  nameCreature: (creatureId: string, name: string) => void;
+  /** 增加食物 */
+  addFood: (amount: number) => void;
+
+  // Daily task actions
+  /** 標記今日任務完成，回傳 { allDone, foodEarned } */
+  completeDailyTask: (taskId: string) => { allDone: boolean; foodEarned: number };
+  /** 領取今日全部完成食物獎勵 */
+  claimDailyBonus: () => void;
+
+  // Hatchling challenge
+  startHatchlingChallenge: () => void;
+  advanceHatchlingDay: () => void;
+
+  // Placement test
+  /** 程度測試完成 — 解鎖指定數量的課節並記錄完成 */
+  completePlacement: (unlockedCount: number) => void;
 }
 
 // ── 時間工具 ─────────────────────────────────────────────────────────
@@ -172,6 +239,22 @@ export const useProgressStore = create<ProgressState>()(
       treasures: {},
       // i18n 初始值
       language: 'zh' as const,
+      // BGM 初始值
+      bgmEnabled: true,
+      // Creature system 初始值
+      creatureProgress: {},
+      foodCount: 0,
+      // Daily tasks 初始值
+      dailyTasksDone: [],
+      dailyTasksDate: '',
+      dailyFoodClaimed: false,
+      // Hatchling challenge 初始值
+      hatchlingStartDate: '',
+      hatchlingDaysDone: 0,
+      hatchlingComplete: false,
+      hatchlingLastAdvance: '',
+      // Placement test 初始值
+      placementDone: false,
 
       setUser: (id, name) => set({ userId: id, displayName: name }),
 
@@ -290,6 +373,145 @@ export const useProgressStore = create<ProgressState>()(
         }),
 
       setLanguage: (lang) => set({ language: lang }),
+      toggleBGM: () => set((state) => ({ bgmEnabled: !state.bgmEnabled })),
+
+      // ── Creature Actions ─────────────────────────────────────────
+      unlockCreature: (creatureId) =>
+        set((state) => {
+          if (state.creatureProgress[creatureId]) return {};
+          return {
+            creatureProgress: {
+              ...state.creatureProgress,
+              [creatureId]: { stage: 0, xp: 0, unlockedAt: Date.now() },
+            },
+          };
+        }),
+
+      feedCreature: (creatureId, amount) => {
+        const { creatureProgress, foodCount } = get();
+        const cp = creatureProgress[creatureId];
+        if (!cp || cp.stage >= 3 || foodCount < amount) return false;
+        // Import XP thresholds from creature def
+        const { CREATURES } = require('../data/creatures');
+        const def = (CREATURES as import('../data/creatures').CreatureDef[]).find((c) => c.id === creatureId);
+        if (!def) return false;
+
+        const actualAmount = Math.min(amount, foodCount);
+        const newXP  = cp.xp + actualAmount;
+        const needed = def.xpToNext[cp.stage as 0|1|2];
+        const evolved = newXP >= needed && cp.stage < 3;
+        const newStage = evolved ? Math.min(cp.stage + 1, 3) as 0|1|2|3 : cp.stage;
+        const leftoverXP = evolved ? newXP - needed : newXP;
+
+        set((state) => ({
+          foodCount: state.foodCount - actualAmount,
+          creatureProgress: {
+            ...state.creatureProgress,
+            [creatureId]: {
+              ...cp,
+              stage: newStage,
+              xp: evolved ? leftoverXP : newXP,
+            },
+          },
+        }));
+        return evolved;
+      },
+
+      nameCreature: (creatureId, name) =>
+        set((state) => {
+          const cp = state.creatureProgress[creatureId];
+          if (!cp) return {};
+          return {
+            creatureProgress: {
+              ...state.creatureProgress,
+              [creatureId]: { ...cp, customName: name },
+            },
+          };
+        }),
+
+      addFood: (amount) =>
+        set((state) => ({ foodCount: state.foodCount + amount })),
+
+      // ── Daily Task Actions ───────────────────────────────────────
+      completeDailyTask: (taskId) => {
+        const today = todayStr();
+        const state = get();
+
+        // 若日期變了，重置
+        const isDifferentDay = state.dailyTasksDate !== today;
+        const currentDone    = isDifferentDay ? [] : state.dailyTasksDone;
+        const alreadyDone    = currentDone.includes(taskId);
+
+        if (alreadyDone) return { allDone: false, foodEarned: 0 };
+
+        const newDone  = [...currentDone, taskId];
+        const allDone  = newDone.length >= 3; // 3 tasks per day
+        const foodEarned = 1; // 1 food per task
+
+        // 孵蛋挑戰：全部任務完成 → 推進一天
+        let hatchlingUpdates: Partial<ProgressState> = {};
+        if (allDone &&
+            state.hatchlingStartDate &&
+            !state.hatchlingComplete &&
+            state.hatchlingLastAdvance !== today) {
+          const newDays = state.hatchlingDaysDone + 1;
+          const nowComplete = newDays >= 7;
+          hatchlingUpdates = {
+            hatchlingDaysDone:   newDays,
+            hatchlingLastAdvance: today,
+            hatchlingComplete:   nowComplete,
+          };
+          // Day 7：自動解鎖九尾狐
+          if (nowComplete && !state.creatureProgress['fox']) {
+            hatchlingUpdates.creatureProgress = {
+              ...state.creatureProgress,
+              fox: { stage: 0, xp: 0, unlockedAt: Date.now() },
+            };
+          }
+        }
+
+        set({
+          dailyTasksDone:   newDone,
+          dailyTasksDate:   today,
+          dailyFoodClaimed: isDifferentDay ? false : state.dailyFoodClaimed,
+          foodCount:        state.foodCount + foodEarned,
+          ...hatchlingUpdates,
+        });
+
+        return { allDone, foodEarned };
+      },
+
+      claimDailyBonus: () => {
+        const state = get();
+        if (state.dailyFoodClaimed) return;
+        set({ dailyFoodClaimed: true, foodCount: state.foodCount + 2 }); // +2 bonus
+      },
+
+      // ── Hatchling Challenge ──────────────────────────────────────
+      startHatchlingChallenge: () => {
+        const { hatchlingStartDate } = get();
+        if (hatchlingStartDate) return; // 已開始
+        set({ hatchlingStartDate: todayStr(), hatchlingDaysDone: 0, hatchlingLastAdvance: '' });
+      },
+
+      advanceHatchlingDay: () => {
+        const { hatchlingDaysDone, hatchlingComplete } = get();
+        if (hatchlingComplete) return;
+        const newDays = hatchlingDaysDone + 1;
+        set({
+          hatchlingDaysDone:  newDays,
+          hatchlingComplete:  newDays >= 7,
+        });
+      },
+
+      // ── Placement Test ───────────────────────────────────────────
+      completePlacement: (unlockedCount) => {
+        const { unlockedLessons } = get();
+        // 解鎖 1..unlockedCount 的課節
+        const toUnlock = Array.from({ length: unlockedCount }, (_, i) => i + 1);
+        const merged   = Array.from(new Set([...unlockedLessons, ...toUnlock]));
+        set({ placementDone: true, unlockedLessons: merged });
+      },
     }),
     {
       name: 'cantokids-progress',
@@ -316,6 +538,19 @@ export const useProgressStore = create<ProgressState>()(
         treasures: state.treasures,
         // i18n
         language: state.language,
+        // Creature system
+        creatureProgress: state.creatureProgress,
+        foodCount: state.foodCount,
+        // Daily tasks
+        dailyTasksDone:   state.dailyTasksDone,
+        dailyTasksDate:   state.dailyTasksDate,
+        dailyFoodClaimed: state.dailyFoodClaimed,
+        // Hatchling
+        hatchlingStartDate:   state.hatchlingStartDate,
+        hatchlingDaysDone:    state.hatchlingDaysDone,
+        hatchlingComplete:    state.hatchlingComplete,
+        hatchlingLastAdvance: state.hatchlingLastAdvance,
+        placementDone:        state.placementDone,
       }),
     }
   )

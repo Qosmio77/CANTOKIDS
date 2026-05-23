@@ -1,17 +1,49 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { View, ActivityIndicator } from 'react-native';
+import { useFonts } from 'expo-font';
 import AppNavigator from './src/navigation/AppNavigator';
 import { useProgressStore } from './src/store/useProgressStore';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { initIAP } from './src/services/iap/iapService';
+import { initSFX } from './src/services/sfxService';
+import { initBGM } from './src/services/bgmService';
+import { Audio } from 'expo-av';
+
 
 export default function App() {
   const checkAndUpdateStreak = useProgressStore((s) => s.checkAndUpdateStreak);
 
+  const [fontsLoaded] = useFonts({
+    'JFOpenHuninn': require('./assets/fonts/jf-openhuninn.ttf'),
+  });
+
   useEffect(() => {
     checkAndUpdateStreak();
     initIAP().catch(() => {});
+
+    Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+      allowsRecordingIOS: false,
+      staysActiveInBackground: false,
+    })
+      .then(() => {
+        initSFX().catch(() => {});
+        initBGM().catch(() => {});
+      })
+      .catch(() => {
+        initSFX().catch(() => {});
+        initBGM().catch(() => {});
+      });
   }, []);
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fbf9f1' }}>
+        <ActivityIndicator size="large" color="#E8A000" />
+      </View>
+    );
+  }
 
   return (
     <ErrorBoundary>

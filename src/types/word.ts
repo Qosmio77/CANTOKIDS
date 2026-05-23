@@ -8,7 +8,23 @@
  *
  * components / componentJyutping / componentPinyin
  *   供詞語 & 成語記錄各分字的拼音，以及逐字練寫流程使用。
+ *
+ * theme
+ *   主題分類（家居、食物、情緒等），與 level 難度系統並行。
+ *   level = 'theme' 表示此字屬主題詞彙，不出現在地圖關卡中。
  */
+
+/** 主題分類 */
+export type Theme =
+  | 'home'       // 家居
+  | 'food'       // 食物
+  | 'emotions'   // 情緒
+  | 'actions'    // 動作
+  | 'hkculture'  // 香港文化
+  | 'school'     // 學校
+  | 'transport'  // 交通
+  | 'adjectives'; // 形容詞
+
 export interface Word {
   id: number;
   character: string;
@@ -18,12 +34,18 @@ export interface Word {
   meaning_en: string;
   example_sentence: string;
   stroke_count: number;
-  level: 'seedling' | 'sapling' | 'tree' | 'sunflower' | 'rainbow' | 'galaxy' | 'bamboo' | 'jade' | 'vocab' | 'idiom';
+  level: 'seedling' | 'sapling' | 'tree' | 'sunflower' | 'rainbow' | 'galaxy' | 'bamboo' | 'jade' | 'vocab' | 'idiom' | 'theme';
   audio_cantonese: string;
   audio_mandarin: string;
 
   /** 認知橋樑用途的 emoji 圖示（可選）*/
   emoji?: string;
+
+  /** 主題分類（可選，主題詞彙專用）*/
+  theme?: Theme;
+
+  /** 多個主題分類（可選，一個字屬多個主題時使用）*/
+  themes?: Theme[];
 
   // ── 多字內容擴充（可選，向後相容）────────────────────────
   contentType?: 'character' | 'word' | 'idiom';

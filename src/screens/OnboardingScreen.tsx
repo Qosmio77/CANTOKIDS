@@ -1,15 +1,16 @@
 /**
- * OnboardingScreen — 首次使用引導
+ * OnboardingScreen — 首次使用引導（卡通角色版）
  *
- * 流程（3 個步驟）：
- * 1. 歡迎畫面 + App 介紹
- * 2. 輸入孩子名字
- * 3. 準備好了！
+ * 流程（4 個步驟）：
+ * 0. 歡迎畫面 — 蘿蔔仔跳躍
+ * 1. 功能介紹 — 蘿蔔仔教學
+ * 2. 輸入名字 — 湯圓仔揮手
+ * 3. 準備好了 — 蘿蔔仔拿獎盃
  *
  * 完成後設定 onboardingDone = true，不再顯示此頁。
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,79 +20,192 @@ import {
   TextInput,
   Animated,
   Dimensions,
-  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Image,
 } from 'react-native';
+import AppText from '../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { useProgressStore } from '../store/useProgressStore';
 
 const { width: SCREEN_W } = Dimensions.get('window');
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
-interface StepProps {
-  onNext: () => void;
+// ── Character images ────────────────────────────────────────────────
+const CHARS = {
+  carrotJump:    require('../../assets/characters/char_carrot_jump.png'),
+  carrotTeach:   require('../../assets/characters/char_carrot_teach.png'),
+  carrotTrophy:  require('../../assets/characters/char_carrot_trophy.png'),
+  carrotIdea:    require('../../assets/characters/char_carrot_idea.png'),
+  bunWave:       require('../../assets/characters/char_bun_wave.png'),
+  bunDance:      require('../../assets/characters/char_bun_dance.png'),
+};
+
+// ── Step 0: Welcome ─────────────────────────────────────────────────
+function StepWelcome({ onNext }: { onNext: () => void }) {
+  return (
+    <View style={s.step}>
+      <View style={s.charBox}>
+        <Image source={CHARS.carrotJump} style={s.charImg} resizeMode="contain" />
+      </View>
+      <View style={s.textBlock}>
+        <AppText style={s.stepTitle}>歡迎來到{'\n'}CantoKids！</AppText>
+        <AppText style={s.stepDesc}>
+          一個為小朋友設計的{'\n'}廣東話 & 繁體字學習 App
+        </AppText>
+      </View>
+      <TouchableOpacity style={s.nextBtn} onPress={onNext} activeOpacity={0.85}>
+        <AppText style={s.nextBtnText}>開始探索</AppText>
+        <Ionicons name="arrow-forward" size={18} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
 }
 
-// 步驟 1: 歡迎
-function StepWelcome({ onNext }: StepProps) {
+// ── Step 1: Features ─────────────────────────────────────────────────
+function StepFeatures({ onNext }: { onNext: () => void }) {
+  const features = [
+    { icon: '✍️', label: '筆順動畫練習' },
+    { icon: '🔊', label: '廣東話發音' },
+    { icon: '🎮', label: '互動測驗 & 闖關' },
+    { icon: '🏅', label: '徽章 & 獎勵系統' },
+  ];
   return (
-    <View style={styles.step}>
-      <Text style={styles.stepEmoji}>🎉</Text>
-      <Text style={styles.stepTitle}>歡迎來到 CantoKids！</Text>
-      <Text style={styles.stepDesc}>
-        一個為小朋友設計的廣東話 & 繁體字學習應用程式。{'\n\n'}
-        透過筆順練習、聆聽、測驗{'\n'}
-        讓學習漢字變得有趣！
-      </Text>
-      <View style={styles.featureList}>
-        {['✍️  筆順動畫練習', '🔊  廣東話發音', '🎮  互動測驗', '🏅  徽章獎勵'].map((f) => (
-          <Text key={f} style={styles.featureItem}>{f}</Text>
+    <View style={s.step}>
+      <View style={s.charBox}>
+        <Image source={CHARS.carrotTeach} style={s.charImg} resizeMode="contain" />
+      </View>
+      <View style={s.textBlock}>
+        <AppText style={s.stepTitle}>一起學廣東話！</AppText>
+        <AppText style={s.stepDesc}>蘿蔔仔陪你從幼苗成長到傳說</AppText>
+      </View>
+      <View style={s.featureGrid}>
+        {features.map((f) => (
+          <View key={f.label} style={s.featureChip}>
+            <AppText style={s.featureIcon}>{f.icon}</AppText>
+            <AppText style={s.featureLabel}>{f.label}</AppText>
+          </View>
         ))}
       </View>
-      <TouchableOpacity style={styles.nextBtn} onPress={onNext}>
-        <Text style={styles.nextBtnText}>開始設定</Text>
-        <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+      <TouchableOpacity style={s.nextBtn} onPress={onNext} activeOpacity={0.85}>
+        <AppText style={s.nextBtnText}>下一步</AppText>
+        <Ionicons name="arrow-forward" size={18} color="#fff" />
       </TouchableOpacity>
     </View>
   );
 }
 
-// 步驟 3: 完成（修復 F-5: 移除死碼 StepName 組件）
+// ── Step 2: Name input ───────────────────────────────────────────────
+function StepName({
+  onNext,
+  childName,
+  setChildName,
+  nameError,
+  setNameError,
+  isCurrent,
+}: {
+  onNext: () => void;
+  childName: string;
+  setChildName: (v: string) => void;
+  nameError: string;
+  setNameError: (v: string) => void;
+  isCurrent: boolean;
+}) {
+  const inputRef = useRef<TextInput>(null);
+
+  // 只有真正滑到這一步才 focus，不會在 Step 0 就彈鍵盤
+  useEffect(() => {
+    if (isCurrent) {
+      const t = setTimeout(() => inputRef.current?.focus(), 350);
+      return () => clearTimeout(t);
+    } else {
+      inputRef.current?.blur();
+    }
+  }, [isCurrent]);
+
+  return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={s.step}>
+        <View style={s.charBoxSmall}>
+          <Image source={CHARS.bunWave} style={s.charImgSmall} resizeMode="contain" />
+        </View>
+        <View style={s.textBlock}>
+          <AppText style={s.stepTitle}>你叫什麼名字？</AppText>
+          <AppText style={s.stepDesc}>湯圓仔想認識你！{'\n'}輸入小朋友的名字吧</AppText>
+        </View>
+        <TextInput
+          ref={inputRef}
+          style={[s.nameInput, nameError ? s.nameInputError : null]}
+          placeholder="例如：小明"
+          placeholderTextColor={Colors.textMuted}
+          value={childName}
+          onChangeText={(v) => {
+            setChildName(v);
+            setNameError('');
+          }}
+          maxLength={10}
+          returnKeyType="done"
+          onSubmitEditing={onNext}
+          accessibilityLabel="小朋友名字輸入"
+        />
+        {!!nameError && <AppText style={s.errorText}>{nameError}</AppText>}
+        <AppText style={s.nameHint}>（稍後可在家長控制台更改）</AppText>
+        <TouchableOpacity
+          style={[s.nextBtn, !childName.trim() && s.nextBtnDisabled]}
+          onPress={onNext}
+          activeOpacity={0.85}
+        >
+          <AppText style={s.nextBtnText}>下一步</AppText>
+          <Ionicons name="arrow-forward" size={18} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </TouchableWithoutFeedback>
+  );
+}
+
+// ── Step 3: Ready ────────────────────────────────────────────────────
 function StepReady({ name, onFinish }: { name: string; onFinish: () => void }) {
   return (
-    <View style={styles.step}>
-      <Text style={styles.stepEmoji}>🌟</Text>
-      <Text style={styles.stepTitle}>
-        {name ? `${name}，` : ''}準備好了！
-      </Text>
-      <Text style={styles.stepDesc}>
-        從幼苗級開始，{'\n'}每天學幾個漢字，{'\n'}慢慢成長為廣東話高手！
-      </Text>
-      <View style={styles.tipBox}>
-        <Text style={styles.tipTitle}>💡 使用貼士</Text>
-        <Text style={styles.tipItem}>• 長按字卡可聆聽廣東話發音</Text>
-        <Text style={styles.tipItem}>• 每日學習維持連勝火焰 🔥</Text>
-        <Text style={styles.tipItem}>• 家長可進入控制台查看進度</Text>
+    <View style={s.step}>
+      <View style={s.charBox}>
+        <Image source={CHARS.carrotTrophy} style={s.charImg} resizeMode="contain" />
       </View>
-      <TouchableOpacity style={styles.nextBtn} onPress={onFinish}>
-        <Text style={styles.nextBtnText}>開始學習！</Text>
-        <Ionicons name="rocket" size={18} color={Colors.white} />
+      <View style={s.textBlock}>
+        <AppText style={s.stepTitle}>
+          {name ? `${name}，\n` : ''}準備好了！🎉
+        </AppText>
+        <AppText style={s.stepDesc}>
+          從幼苗開始，每天學幾個字，{'\n'}慢慢成長為廣東話高手！
+        </AppText>
+      </View>
+      <View style={s.tipBox}>
+        <AppText style={s.tipItem}>💡 長按字卡可聆聽廣東話發音</AppText>
+        <AppText style={s.tipItem}>🔥 每日學習維持連勝火焰</AppText>
+        <AppText style={s.tipItem}>👨‍👩‍👧 家長可進入控制台查看進度</AppText>
+      </View>
+      <TouchableOpacity style={s.startBtn} onPress={onFinish} activeOpacity={0.85}>
+        <AppText style={s.startBtnText}>開始學習！</AppText>
+        <Ionicons name="rocket" size={20} color="#fff" />
       </TouchableOpacity>
     </View>
   );
 }
 
+// ── Main ─────────────────────────────────────────────────────────────
 export default function OnboardingScreen({ navigation }: any) {
   const [step, setStep] = useState(0);
   const [childName, setChildName] = useState('');
   const [nameError, setNameError] = useState('');
   const slideAnim = useRef(new Animated.Value(0)).current;
 
-  const { setUser, completeOnboarding } = useProgressStore();
+  const { setUser, completeOnboarding, startHatchlingChallenge } = useProgressStore();
 
   const goNext = () => {
-    // 步驟 1 → 2 驗證名字
-    if (step === 1) {
+    // Step 2 (name) validation
+    if (step === 2) {
       const trimmed = childName.trim();
       if (!trimmed) {
         setNameError('請輸入小朋友的名字');
@@ -104,160 +218,226 @@ export default function OnboardingScreen({ navigation }: any) {
       setUser('local-user', trimmed);
     }
 
-    // 動畫切換
     Animated.timing(slideAnim, {
       toValue: -(step + 1) * SCREEN_W,
-      duration: 280,
+      duration: 300,
       useNativeDriver: true,
-    }).start(() => {
-      setStep((s) => s + 1);
-    });
+    }).start(() => setStep((s) => s + 1));
   };
 
   const handleFinish = () => {
     completeOnboarding();
+    startHatchlingChallenge(); // 開始7天孵蛋挑戰
     navigation.replace('MainTabs');
   };
 
   const renderDots = () => (
-    <View style={styles.dotsRow}>
+    <View style={s.dotsRow}>
       {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-        <View key={i} style={[styles.dot, i === step && styles.dotActive]} />
+        <View key={i} style={[s.dot, i === step && s.dotActive]} />
       ))}
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {renderDots()}
-
-      {/* 滑動容器 */}
-      <Animated.View
-        style={[
-          styles.slideContainer,
-          { transform: [{ translateX: slideAnim }], width: SCREEN_W * TOTAL_STEPS },
-        ]}
+    <SafeAreaView style={s.safe}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
       >
-        {/* Step 0: 歡迎 */}
-        <View style={[styles.page, { width: SCREEN_W }]}>
-          <StepWelcome onNext={goNext} />
-        </View>
+        {renderDots()}
 
-        {/* Step 1: 輸入名字 */}
-        <View style={[styles.page, { width: SCREEN_W }]}>
-          <View style={styles.step}>
-            <Text style={styles.stepEmoji}>👧</Text>
-            <Text style={styles.stepTitle}>你叫什麼名字？</Text>
-            <Text style={styles.stepDesc}>輸入小朋友的名字，{'\n'}讓 App 更個人化！</Text>
-            <TextInput
-              style={[styles.nameInput, nameError ? styles.nameInputError : null]}
-              placeholder="例如：小明"
-              placeholderTextColor={Colors.textMuted}
-              value={childName}
-              onChangeText={(t) => {
-                setChildName(t);
-                setNameError('');
-              }}
-              maxLength={10}
-              autoFocus
-              returnKeyType="next"
-              onSubmitEditing={goNext}
-              accessibilityLabel="小朋友名字輸入"
-            />
-            {!!nameError && <Text style={styles.errorText}>{nameError}</Text>}
-            <Text style={styles.nameHint}>（稍後可在家長控制台更改）</Text>
-            <TouchableOpacity
-              style={[styles.nextBtn, !childName.trim() && styles.nextBtnDisabled]}
-              onPress={goNext}
-            >
-              <Text style={styles.nextBtnText}>下一步</Text>
-              <Ionicons name="arrow-forward" size={18} color={Colors.white} />
-            </TouchableOpacity>
+        <Animated.View
+          style={[
+            s.slideContainer,
+            { transform: [{ translateX: slideAnim }], width: SCREEN_W * TOTAL_STEPS },
+          ]}
+        >
+          <View style={[s.page, { width: SCREEN_W }]}>
+            <StepWelcome onNext={goNext} />
           </View>
-        </View>
-
-        {/* Step 2: 完成 */}
-        <View style={[styles.page, { width: SCREEN_W }]}>
-          <StepReady name={childName.trim()} onFinish={handleFinish} />
-        </View>
-      </Animated.View>
+          <View style={[s.page, { width: SCREEN_W }]}>
+            <StepFeatures onNext={goNext} />
+          </View>
+          <View style={[s.page, { width: SCREEN_W }]}>
+            <StepName
+              onNext={goNext}
+              childName={childName}
+              setChildName={setChildName}
+              nameError={nameError}
+              setNameError={setNameError}
+              isCurrent={step === 2}
+            />
+          </View>
+          <View style={[s.page, { width: SCREEN_W }]}>
+            <StepReady name={childName.trim()} onFinish={handleFinish} />
+          </View>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: Colors.primaryBg },
+// ── Styles ────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  safe:   { flex: 1, backgroundColor: Colors.primaryBg },
+
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
     paddingTop: 20,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.primaryLight,
-  },
-  dotActive: { backgroundColor: Colors.primary, width: 20 },
+  dot:       { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.primaryLight },
+  dotActive: { backgroundColor: Colors.primary, width: 22, borderRadius: 4 },
+
   slideContainer: {
     flex: 1,
     flexDirection: 'row',
     overflow: 'hidden',
   },
   page: { flex: 1, justifyContent: 'center' },
+
   step: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
-    gap: 20,
+    paddingHorizontal: 28,
+    gap: 18,
   },
-  stepEmoji: { fontSize: 72 },
-  stepTitle: { fontSize: 26, fontWeight: '800', color: Colors.text, textAlign: 'center' },
-  stepDesc: { fontSize: 16, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24 },
-  featureList: { gap: 10, alignSelf: 'stretch', paddingLeft: 16 },
-  featureItem: { fontSize: 16, color: Colors.text },
-  tipBox: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 16,
-    alignSelf: 'stretch',
+
+  // Character images
+  charBox: {
+    width: 220,
+    height: 220,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  charImg: {
+    width: 220,
+    height: 220,
+  },
+  charBoxSmall: {
+    width: 160,
+    height: 160,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  charImgSmall: {
+    width: 160,
+    height: 160,
+  },
+
+  textBlock: {
+    alignItems: 'center',
     gap: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
   },
-  tipTitle: { fontSize: 14, fontWeight: '700', color: Colors.text },
-  tipItem: { fontSize: 13, color: Colors.textSecondary, lineHeight: 20 },
+  stepTitle: {
+    fontSize: 35,
+    fontWeight: '800',
+    color: Colors.text,
+    textAlign: 'center',
+    lineHeight: 36,
+  },
+  stepDesc: {
+    fontSize: 20,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+
+  // Feature grid
+  featureGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'center',
+  },
+  featureChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.primaryBg,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    shadowColor: '#C4BFA8', shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55, shadowRadius: 10, elevation: 6,
+    borderTopWidth: 1.5, borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5, borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)', borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)', borderRightColor: 'rgba(180,175,155,0.4)',
+  },
+  featureIcon:  { fontSize: 22 },
+  featureLabel: { fontSize: 18, fontWeight: '600', color: Colors.text },
+
+  // Name input
   nameInput: {
     alignSelf: 'stretch',
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.primaryMuted,
     borderRadius: 14,
     paddingHorizontal: 18,
     paddingVertical: 14,
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: '600',
     color: Colors.text,
-    borderWidth: 2,
-    borderColor: Colors.primaryLight,
+    borderTopWidth: 1.5, borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5, borderRightWidth: 1.5,
+    borderTopColor: 'rgba(180,175,155,0.5)', borderLeftColor: 'rgba(180,175,155,0.5)',
+    borderBottomColor: 'rgba(255,255,255,0.9)', borderRightColor: 'rgba(255,255,255,0.9)',
     textAlign: 'center',
   },
-  nameInputError: { borderColor: Colors.error },
-  errorText: { fontSize: 13, color: Colors.error },
-  nameHint: { fontSize: 12, color: Colors.textMuted },
+  nameInputError: { borderColor: '#EF4444' },
+  errorText:   { fontSize: 16, color: '#EF4444' },
+  nameHint:    { fontSize: 15, color: Colors.textMuted },
+
+  // Tips box
+  tipBox: {
+    backgroundColor: Colors.primaryBg,
+    borderRadius: 16,
+    padding: 16,
+    alignSelf: 'stretch',
+    gap: 10,
+    shadowColor: '#C4BFA8', shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55, shadowRadius: 10, elevation: 6,
+    borderTopWidth: 1.5, borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5, borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)', borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)', borderRightColor: 'rgba(180,175,155,0.4)',
+  },
+  tipItem: { fontSize: 18, color: Colors.textSecondary, lineHeight: 20 },
+
+  // Buttons
   nextBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingVertical: 15,
+    paddingHorizontal: 36,
     borderRadius: 16,
     gap: 8,
-    marginTop: 8,
+    shadowColor: '#8B6000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35, shadowRadius: 8, elevation: 5,
   },
-  nextBtnDisabled: { opacity: 0.5 },
-  nextBtnText: { fontSize: 17, fontWeight: '700', color: Colors.white },
+  nextBtnDisabled: { opacity: 0.45 },
+  nextBtnText: { fontSize: 21, fontWeight: '700', color: '#fff' },
+
+  startBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.secondary,
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 18,
+    gap: 8,
+    shadowColor: '#7a3d00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  startBtnText: { fontSize: 24, fontWeight: '800', color: '#fff' },
 });

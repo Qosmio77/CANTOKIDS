@@ -12,6 +12,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Animated, Text, StyleSheet, View } from 'react-native';
+import AppText from './AppText';
 
 interface FloatingXPProps {
   /** XP 數量，顯示為「+{amount} XP」 */
@@ -89,7 +90,7 @@ export default function FloatingXP({ amount, visible, onDone }: FloatingXPProps)
           },
         ]}
       >
-        <Text style={styles.text}>+{amount} XP ⚡</Text>
+        <AppText style={styles.text}>+{amount} XP ⚡</AppText>
       </Animated.View>
     </View>
   );

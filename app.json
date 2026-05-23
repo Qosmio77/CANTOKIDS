@@ -42,7 +42,14 @@
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "CantoKids",
+      "shortName": "CantoKids",
+      "lang": "zh-HK",
+      "themeColor": "#E8A000",
+      "backgroundColor": "#FFFBEB",
+      "output": "static",
+      "description": "為小朋友設計的繁體字與廣東話學習應用程式"
     },
     "plugins": [
       "expo-av"

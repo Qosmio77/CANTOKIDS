@@ -21,12 +21,14 @@ import {
   SafeAreaView,
   Animated,
 } from 'react-native';
+import AppText from '../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 import {
   BOSSES,
   BossDef,
   useProgressStore,
   getRankByXP,
+  getBossName,
   XP_PER_BOSS_DEFEATED,
 } from '../store/useProgressStore';
 import {
@@ -38,6 +40,7 @@ import { Word } from '../types/word';
 import LevelUpModal from '../components/LevelUpModal';
 import TreasureDropModal from '../components/TreasureDropModal';
 import { rollLoot } from '../services/lootService';
+import { playSFX } from '../services/sfxService';
 import { Treasure } from '../data/treasures';
 import { Colors } from '../theme/colors';
 import { useTranslation } from '../hooks/useTranslation';
@@ -106,7 +109,20 @@ export default function BossBattleScreen({ route, navigation }: any) {
     defeatBoss,
     addTreasures,
     bossesDefeated,
+    language,
+    unlockCreature,
   } = useProgressStore();
+
+  // Boss → creature mapping
+  const BOSS_TO_CREATURE: Record<string, string> = {
+    boss_seedling:  'fox',
+    boss_sapling:   'tiger',
+    boss_tree:      'phoenix',
+    boss_sunflower: 'qilin',
+    boss_rainbow:   'dragon',
+    boss_galaxy:    'pixiu',
+    boss_bamboo:    'xuanwu',
+  };
 
   const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>('battle');
@@ -158,6 +174,7 @@ export default function BossBattleScreen({ route, navigation }: any) {
       setIsCorrect(correct);
 
       if (correct) {
+        playSFX('correct');
         // Boss 受傷
         animateBossHurt();
         const newHP = bossHP - 1;
@@ -170,8 +187,13 @@ export default function BossBattleScreen({ route, navigation }: any) {
             // 勝利！
             const leveledUp = addXP(XP_PER_BOSS_DEFEATED);
             defeatBoss(bossId);
+            // 解鎖對應神獸
+            const creatureId = BOSS_TO_CREATURE[bossId];
+            if (creatureId) unlockCreature(creatureId);
             if (leveledUp) {
-              const rank = getRankByXP(playerXP + XP_PER_BOSS_DEFEATED);
+              // 使用 store 最新 XP（addXP 已更新），避免閉包舊值
+              const freshXP = useProgressStore.getState().playerXP;
+              const rank = getRankByXP(freshXP);
               setNewRank(rank);
               setShowLevelUp(true);
             }
@@ -188,6 +210,7 @@ export default function BossBattleScreen({ route, navigation }: any) {
           }
         }, 700);
       } else {
+        playSFX('wrong');
         // 玩家受傷
         animatePlayerHurt();
 
@@ -211,9 +234,9 @@ export default function BossBattleScreen({ route, navigation }: any) {
   const HPBar = ({ current, max, color }: { current: number; max: number; color: string }) => (
     <View style={styles.hpRow}>
       {Array.from({ length: max }).map((_, i) => (
-        <Text key={i} style={styles.hpHeart}>
+        <AppText key={i} style={styles.hpHeart}>
           {i < current ? '❤️' : '🖤'}
-        </Text>
+        </AppText>
       ))}
     </View>
   );
@@ -223,17 +246,17 @@ export default function BossBattleScreen({ route, navigation }: any) {
     return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: boss.bgColor }]}>
         <View style={styles.endContainer}>
-          <Text style={styles.endEmoji}>{boss.emoji}</Text>
-          <Text style={styles.endTitle}>{t('bossVictoryTitle')}</Text>
-          <Text style={styles.endSubtitle}>
-            {t('bossVictoryDesc').replace('{name}', boss.name).replace('{xp}', String(XP_PER_BOSS_DEFEATED))}
-          </Text>
+          <AppText style={styles.endEmoji}>{boss.emoji}</AppText>
+          <AppText style={styles.endTitle}>{t('bossVictoryTitle')}</AppText>
+          <AppText style={styles.endSubtitle}>
+            {t('bossVictoryDesc').replace('{name}', getBossName(boss, language)).replace('{xp}', String(XP_PER_BOSS_DEFEATED))}
+          </AppText>
           <TouchableOpacity
             style={[styles.endBtn, { backgroundColor: boss.color }]}
             onPress={() => navigation.goBack()}
             accessibilityLabel={t('bossBackToMap')}
           >
-            <Text style={styles.endBtnText}>{t('bossBackToMap')}</Text>
+            <AppText style={styles.endBtnText}>{t('bossBackToMap')}</AppText>
           </TouchableOpacity>
         </View>
         <LevelUpModal
@@ -258,13 +281,13 @@ export default function BossBattleScreen({ route, navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color={boss.color} />
         </TouchableOpacity>
-        <Text style={[styles.topTitle, { color: boss.color }]}>{t('bossBattleTitle')}</Text>
+        <AppText style={[styles.topTitle, { color: boss.color }]}>{t('bossBattleTitle')}</AppText>
       </View>
 
       {/* Boss 區塊 */}
       <View style={styles.bossSection}>
         {/* Boss 名稱 */}
-        <Text style={[styles.bossName, { color: boss.color }]}>{boss.name}</Text>
+        <AppText style={[styles.bossName, { color: boss.color }]}>{getBossName(boss, language)}</AppText>
 
         {/* Boss HP */}
         <HPBar current={bossHP} max={BOSS_MAX_HP} color={boss.color} />
@@ -277,17 +300,23 @@ export default function BossBattleScreen({ route, navigation }: any) {
               transform: [{ translateX: bossShake }],
               opacity: bossOpacity,
               backgroundColor: boss.color + '22',
-              borderColor: boss.color,
+              shadowColor: '#000',
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 7,
             },
           ]}
         >
-          <Text style={styles.bossEmoji}>{boss.emoji}</Text>
+          <AppText style={styles.bossEmoji}>{boss.emoji}</AppText>
         </Animated.View>
 
         {/* 進度 */}
-        <Text style={[styles.progressLabel, { color: boss.color }]}>
-          {qIndex + 1} / {questions.length} 題
-        </Text>
+        <AppText style={[styles.progressLabel, { color: boss.color }]}>
+          {t('bossProgressLabel')
+            .replace('{current}', String(qIndex + 1))
+            .replace('{total}', String(questions.length))}
+        </AppText>
       </View>
 
       {/* 題目區塊 */}
@@ -295,8 +324,8 @@ export default function BossBattleScreen({ route, navigation }: any) {
         <View style={styles.questionSection}>
           {/* 顯示漢字 */}
           <View style={styles.charBox}>
-            <Text style={styles.charText}>{currentQ.word.character}</Text>
-            <Text style={styles.charPinyin}>{currentQ.word.jyutping}</Text>
+            <AppText style={styles.charText}>{currentQ.word.character}</AppText>
+            <AppText style={styles.charPinyin}>{currentQ.word.jyutping}</AppText>
           </View>
 
           {/* 選項 */}
@@ -311,7 +340,6 @@ export default function BossBattleScreen({ route, navigation }: any) {
                   key={opt}
                   style={[
                     styles.optionBtn,
-                    { borderColor: boss.color + '66' },
                     isRight && styles.optionCorrect,
                     isWrong && styles.optionWrong,
                     isReveal && styles.optionReveal,
@@ -320,7 +348,7 @@ export default function BossBattleScreen({ route, navigation }: any) {
                   disabled={selectedOption !== null}
                   accessibilityLabel={opt}
                 >
-                  <Text
+                  <AppText
                     style={[
                       styles.optionText,
                       (isRight || isReveal) && styles.optionTextCorrect,
@@ -328,7 +356,7 @@ export default function BossBattleScreen({ route, navigation }: any) {
                     ]}
                   >
                     {opt}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               );
             })}
@@ -373,7 +401,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 8,
-    borderWidth: 3,
   },
   bossEmoji: { fontSize: 60 },
   progressLabel: { fontSize: 13, fontWeight: '600' },
@@ -386,13 +413,22 @@ const styles = StyleSheet.create({
   },
   charBox: {
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.primaryBg,
     borderRadius: 20,
     paddingVertical: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: '#C4BFA8',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)',
+    borderRightColor: 'rgba(180,175,155,0.4)',
   },
   charText: { fontSize: 64, fontWeight: '800', color: '#1F2937', lineHeight: 72 },
   charPinyin: { fontSize: 16, color: '#9CA3AF', fontWeight: '600', marginTop: 4 },
@@ -405,20 +441,46 @@ const styles = StyleSheet.create({
   },
   optionBtn: {
     width: '46%',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.primaryBg,
     borderRadius: 16,
     paddingVertical: 18,
     paddingHorizontal: 12,
     alignItems: 'center',
-    borderWidth: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowColor: '#C4BFA8',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)',
+    borderRightColor: 'rgba(180,175,155,0.4)',
   },
-  optionCorrect: { backgroundColor: '#ECFDF5', borderColor: '#10B981' },
-  optionWrong:   { backgroundColor: '#FEF2F2', borderColor: '#EF4444' },
-  optionReveal:  { backgroundColor: '#ECFDF5', borderColor: '#10B981' },
+  optionCorrect: {
+    backgroundColor: '#ECFDF5',
+    borderTopColor: '#10B981',
+    borderLeftColor: '#10B981',
+    borderBottomColor: '#10B981',
+    borderRightColor: '#10B981',
+  },
+  optionWrong: {
+    backgroundColor: '#FEF2F2',
+    borderTopColor: '#EF4444',
+    borderLeftColor: '#EF4444',
+    borderBottomColor: '#EF4444',
+    borderRightColor: '#EF4444',
+  },
+  optionReveal: {
+    backgroundColor: '#ECFDF5',
+    borderTopColor: '#10B981',
+    borderLeftColor: '#10B981',
+    borderBottomColor: '#10B981',
+    borderRightColor: '#10B981',
+  },
   optionText:     { fontSize: 18, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
   optionTextCorrect: { color: '#065F46' },
   optionTextWrong:   { color: '#991B1B' },

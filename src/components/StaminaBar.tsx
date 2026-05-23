@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import AppText from './AppText';
 interface StaminaBarProps {
   stamina: number;
   maxStamina?: number;
@@ -24,9 +25,9 @@ export default function StaminaBar({
   return (
     <View style={styles.row}>
       {Array.from({ length: maxStamina }).map((_, i) => (
-        <Text key={i} style={{ fontSize, lineHeight: fontSize + 4 }}>
+        <AppText key={i} style={{ fontSize, lineHeight: fontSize + 4 }}>
           {i < stamina ? '❤️' : '🖤'}
-        </Text>
+        </AppText>
       ))}
     </View>
   );

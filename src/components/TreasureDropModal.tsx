@@ -15,7 +15,10 @@ import {
   Animated,
   ScrollView,
 } from 'react-native';
-import { Treasure, RARITY_CONFIG } from '../data/treasures';
+import AppText from './AppText';
+import { Treasure, RARITY_CONFIG, getTreasureLocalized } from '../data/treasures';
+import { useTranslation } from '../hooks/useTranslation';
+import { useProgressStore } from '../store/useProgressStore';
 
 interface TreasureDropModalProps {
   visible: boolean;
@@ -28,9 +31,12 @@ interface CardProps {
   treasure: Treasure;
   delay: number;
   visible: boolean;
+  rarityLabel: string;
+  localizedName: string;
+  localizedDesc: string;
 }
 
-function TreasureCard({ treasure, delay, visible }: CardProps) {
+function TreasureCard({ treasure, delay, visible, rarityLabel, localizedName, localizedDesc }: CardProps) {
   const scale = useRef(new Animated.Value(0)).current;
   const config = RARITY_CONFIG[treasure.rarity];
   const hasGlow = treasure.rarity === 'legendary' || treasure.rarity === 'epic';
@@ -67,12 +73,12 @@ function TreasureCard({ treasure, delay, visible }: CardProps) {
         },
       ]}
     >
-      <Text style={styles.cardEmoji}>{treasure.emoji}</Text>
+      <AppText style={styles.cardEmoji}>{treasure.emoji}</AppText>
       <View style={[styles.rarityBadge, { backgroundColor: config.color }]}>
-        <Text style={styles.rarityLabel}>{config.label}</Text>
+        <AppText style={styles.rarityLabel}>{rarityLabel}</AppText>
       </View>
-      <Text style={[styles.cardName, { color: config.color }]}>{treasure.name}</Text>
-      <Text style={styles.cardDesc}>{treasure.description}</Text>
+      <AppText style={[styles.cardName, { color: config.color }]}>{localizedName}</AppText>
+      <AppText style={styles.cardDesc}>{localizedDesc}</AppText>
     </Animated.View>
   );
 }
@@ -83,6 +89,9 @@ export default function TreasureDropModal({
   treasures,
   onClose,
 }: TreasureDropModalProps) {
+  const { t } = useTranslation();
+  const language = useProgressStore((s) => s.language);
+
   // 標題淡入
   const titleOpacity = useRef(new Animated.Value(0)).current;
 
@@ -109,7 +118,7 @@ export default function TreasureDropModal({
         <View style={styles.container}>
           {/* 標題 */}
           <Animated.Text style={[styles.title, { opacity: titleOpacity }]}>
-            寶物掉落！✨
+            {t('treasureDropTitle')}
           </Animated.Text>
 
           {/* 寶物卡片列表 */}
@@ -117,23 +126,35 @@ export default function TreasureDropModal({
             contentContainerStyle={styles.cardsContainer}
             showsVerticalScrollIndicator={false}
           >
-            {treasures.map((t, index) => (
-              <TreasureCard
-                key={t.id}
-                treasure={t}
-                delay={index * 200}
-                visible={visible}
-              />
-            ))}
+            {treasures.map((item, index) => {
+              const { name: localizedName, description: localizedDesc } =
+                getTreasureLocalized(item, language);
+              const rarityLabel =
+                item.rarity === 'common'    ? t('rarityCommon') :
+                item.rarity === 'rare'      ? t('rarityRare') :
+                item.rarity === 'epic'      ? t('rarityEpic') :
+                t('rarityLegendary');
+              return (
+                <TreasureCard
+                  key={item.id}
+                  treasure={item}
+                  delay={index * 200}
+                  visible={visible}
+                  rarityLabel={rarityLabel}
+                  localizedName={localizedName}
+                  localizedDesc={localizedDesc}
+                />
+              );
+            })}
           </ScrollView>
 
           {/* 收集按鈕 */}
           <TouchableOpacity
             style={styles.closeBtn}
             onPress={onClose}
-            accessibilityLabel="收集寶物"
+            accessibilityLabel={t('treasureCollectA11y')}
           >
-            <Text style={styles.closeBtnText}>收集！</Text>
+            <AppText style={styles.closeBtnText}>{t('treasureCollectBtn')}</AppText>
           </TouchableOpacity>
         </View>
       </View>

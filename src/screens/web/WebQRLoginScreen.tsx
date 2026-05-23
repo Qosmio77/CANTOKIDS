@@ -18,6 +18,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import QRCode from 'react-native-qrcode-svg';
 import { Colors } from '../../theme/colors';
 import {
@@ -135,10 +136,10 @@ export default function WebQRLoginScreen({ onLogin }: Props) {
   if (phase === 'error') {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorEmoji}>⚠️</Text>
-        <Text style={styles.errorTitle}>{errorMsg}</Text>
+        <AppText style={styles.errorEmoji}>⚠️</AppText>
+        <AppText style={styles.errorTitle}>{errorMsg}</AppText>
         <TouchableOpacity style={styles.retryBtn} onPress={initSession}>
-          <Text style={styles.retryBtnText}>重試</Text>
+          <AppText style={styles.retryBtnText}>重試</AppText>
         </TouchableOpacity>
       </View>
     );
@@ -148,15 +149,15 @@ export default function WebQRLoginScreen({ onLogin }: Props) {
     <View style={styles.container}>
       {/* 標題 */}
       <View style={styles.header}>
-        <Text style={styles.appName}>CantoKids</Text>
-        <Text style={styles.subtitle}>網頁學習版</Text>
+        <AppText style={styles.appName}>CantoKids</AppText>
+        <AppText style={styles.subtitle}>網頁學習版</AppText>
       </View>
 
       {/* QR 卡片 */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>
+        <AppText style={styles.cardTitle}>
           {phase === 'scanned' ? '📱 手機已掃描，等待確認…' : '📱 用手機 App 掃描登入'}
-        </Text>
+        </AppText>
 
         {phase === 'creating' ? (
           <View style={styles.qrPlaceholder}>
@@ -173,7 +174,7 @@ export default function WebQRLoginScreen({ onLogin }: Props) {
             />
             {phase === 'scanned' && (
               <View style={styles.qrOverlay}>
-                <Text style={styles.qrOverlayText}>✅</Text>
+                <AppText style={styles.qrOverlayText}>✅</AppText>
               </View>
             )}
           </View>
@@ -181,15 +182,15 @@ export default function WebQRLoginScreen({ onLogin }: Props) {
 
         {/* 倒計時 */}
         <View style={styles.timerRow}>
-          <Text style={styles.timerLabel}>QR Code 有效時間</Text>
-          <Text style={[styles.timerValue, secondsLeft < 60 && styles.timerValueUrgent]}>
+          <AppText style={styles.timerLabel}>QR Code 有效時間</AppText>
+          <AppText style={[styles.timerValue, secondsLeft < 60 && styles.timerValueUrgent]}>
             {formatTime(secondsLeft)}
-          </Text>
+          </AppText>
         </View>
 
         {/* 刷新 */}
         <TouchableOpacity style={styles.refreshBtn} onPress={initSession}>
-          <Text style={styles.refreshBtnText}>🔄 重新產生</Text>
+          <AppText style={styles.refreshBtnText}>🔄 重新產生</AppText>
         </TouchableOpacity>
       </View>
 
@@ -208,9 +209,9 @@ function StepItem({ step, text }: { step: string; text: string }) {
   return (
     <View style={styles.stepRow}>
       <View style={styles.stepBadge}>
-        <Text style={styles.stepBadgeText}>{step}</Text>
+        <AppText style={styles.stepBadgeText}>{step}</AppText>
       </View>
-      <Text style={styles.stepText}>{text}</Text>
+      <AppText style={styles.stepText}>{text}</AppText>
     </View>
   );
 }

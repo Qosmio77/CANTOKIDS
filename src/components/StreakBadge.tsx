@@ -19,6 +19,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import { Animated, Text, StyleSheet } from 'react-native';
+import AppText from './AppText';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 
@@ -70,7 +71,7 @@ export default function StreakBadge({ streakDays }: StreakBadgeProps) {
       ]}
     >
       <Ionicons name="flame" size={16} color={Colors.streak} />
-      <Text style={styles.count}>{streakDays}</Text>
+      <AppText style={styles.count}>{streakDays}</AppText>
     </Animated.View>
   );
 }

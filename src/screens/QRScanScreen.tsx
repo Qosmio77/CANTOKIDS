@@ -21,6 +21,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import AppText from '../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { CameraView, Camera } = require('expo-camera') as any;
@@ -129,7 +130,7 @@ export default function QRScanScreen({ navigation }: any) {
     return (
       <SafeAreaView style={styles.center}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.hint}>正在請求相機權限…</Text>
+        <AppText style={styles.hint}>正在請求相機權限…</AppText>
       </SafeAreaView>
     );
   }
@@ -138,10 +139,10 @@ export default function QRScanScreen({ navigation }: any) {
     return (
       <SafeAreaView style={styles.center}>
         <Ionicons name="camera-outline" size={48} color={Colors.textMuted} />
-        <Text style={styles.errorText}>未授予相機權限</Text>
-        <Text style={styles.hint}>請在系統設定中允許 CantoKids 使用相機</Text>
+        <AppText style={styles.errorText}>未授予相機權限</AppText>
+        <AppText style={styles.hint}>請在系統設定中允許 CantoKids 使用相機</AppText>
         <TouchableOpacity style={styles.btn} onPress={() => navigation.goBack()}>
-          <Text style={styles.btnText}>返回</Text>
+          <AppText style={styles.btnText}>返回</AppText>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -151,11 +152,11 @@ export default function QRScanScreen({ navigation }: any) {
   if (phase === 'done') {
     return (
       <SafeAreaView style={styles.center}>
-        <Text style={{ fontSize: 72 }}>✅</Text>
-        <Text style={styles.doneTitle}>登入成功！</Text>
-        <Text style={styles.hint}>網頁版現在顯示你的學習進度了 🎉</Text>
+        <AppText style={{ fontSize: 72 }}>✅</AppText>
+        <AppText style={styles.doneTitle}>登入成功！</AppText>
+        <AppText style={styles.hint}>網頁版現在顯示你的學習進度了 🎉</AppText>
         <TouchableOpacity style={styles.btn} onPress={() => navigation.goBack()}>
-          <Text style={styles.btnText}>關閉</Text>
+          <AppText style={styles.btnText}>關閉</AppText>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -166,12 +167,12 @@ export default function QRScanScreen({ navigation }: any) {
     return (
       <SafeAreaView style={styles.center}>
         <Ionicons name="alert-circle" size={64} color={Colors.error} />
-        <Text style={styles.errorText}>{errorMsg}</Text>
+        <AppText style={styles.errorText}>{errorMsg}</AppText>
         <TouchableOpacity style={styles.btn} onPress={handleRetry}>
-          <Text style={styles.btnText}>重新掃描</Text>
+          <AppText style={styles.btnText}>重新掃描</AppText>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelBtnText}>取消</Text>
+          <AppText style={styles.cancelBtnText}>取消</AppText>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -181,28 +182,28 @@ export default function QRScanScreen({ navigation }: any) {
   if (phase === 'confirming') {
     return (
       <SafeAreaView style={[styles.center, { backgroundColor: Colors.primaryBg }]}>
-        <Text style={{ fontSize: 64 }}>🔐</Text>
-        <Text style={styles.confirmTitle}>允許登入網頁版？</Text>
-        <Text style={styles.confirmSubtitle}>
+        <AppText style={{ fontSize: 64 }}>🔐</AppText>
+        <AppText style={styles.confirmTitle}>允許登入網頁版？</AppText>
+        <AppText style={styles.confirmSubtitle}>
           你的學習進度將同步至該瀏覽器，{'\n'}
           有效期 5 分鐘。
-        </Text>
+        </AppText>
 
         <View style={styles.userCard}>
-          <Text style={styles.userCardLabel}>同步帳號</Text>
-          <Text style={styles.userCardName}>{store.displayName}</Text>
-          <Text style={styles.userCardStats}>
+          <AppText style={styles.userCardLabel}>同步帳號</AppText>
+          <AppText style={styles.userCardName}>{store.displayName}</AppText>
+          <AppText style={styles.userCardStats}>
             {Object.values(store.wordProgress).filter((p) => p.learned).length} 個字已學 ·{' '}
             {store.playerXP} XP · Lv.{store.playerLevel}
-          </Text>
+          </AppText>
         </View>
 
         <TouchableOpacity style={styles.approveBtn} onPress={handleApprove}>
           <Ionicons name="checkmark-circle" size={22} color="#fff" />
-          <Text style={styles.approveBtnText}>允許登入</Text>
+          <AppText style={styles.approveBtnText}>允許登入</AppText>
         </TouchableOpacity>
         <TouchableOpacity style={styles.rejectBtn} onPress={handleReject}>
-          <Text style={styles.rejectBtnText}>拒絕</Text>
+          <AppText style={styles.rejectBtnText}>拒絕</AppText>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -213,7 +214,7 @@ export default function QRScanScreen({ navigation }: any) {
     return (
       <SafeAreaView style={styles.center}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.hint}>正在同步資料…</Text>
+        <AppText style={styles.hint}>正在同步資料…</AppText>
       </SafeAreaView>
     );
   }
@@ -226,7 +227,7 @@ export default function QRScanScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={28} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.cameraTitle}>掃描 QR Code</Text>
+        <AppText style={styles.cameraTitle}>掃描 QR Code</AppText>
         <View style={{ width: 40 }} />
       </SafeAreaView>
 
@@ -246,9 +247,9 @@ export default function QRScanScreen({ navigation }: any) {
       </View>
 
       <View style={styles.cameraBottomHint}>
-        <Text style={styles.cameraHintText}>
+        <AppText style={styles.cameraHintText}>
           將相機對準網頁版的 QR Code
-        </Text>
+        </AppText>
       </View>
     </View>
   );

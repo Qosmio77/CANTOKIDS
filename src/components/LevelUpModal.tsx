@@ -14,7 +14,10 @@ import {
   TouchableOpacity,
   Animated,
 } from 'react-native';
-import { PlayerRank } from '../store/useProgressStore';
+import AppText from './AppText';
+import { PlayerRank, getRankName, useProgressStore } from '../store/useProgressStore';
+import { useTranslation } from '../hooks/useTranslation';
+import { playSFX } from '../services/sfxService';
 
 interface LevelUpModalProps {
   visible: boolean;
@@ -23,11 +26,14 @@ interface LevelUpModalProps {
 }
 
 export default function LevelUpModal({ visible, newRank, onClose }: LevelUpModalProps) {
+  const { t } = useTranslation();
+  const language = useProgressStore((s) => s.language);
   const scale   = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible && newRank) {
+      playSFX('levelup');
       // 入場動畫
       scale.setValue(0.4);
       opacity.setValue(0);
@@ -58,19 +64,19 @@ export default function LevelUpModal({ visible, newRank, onClose }: LevelUpModal
       <View style={styles.overlay}>
         <Animated.View style={[styles.card, { transform: [{ scale }], opacity }]}>
           {/* 光芒背景文字 */}
-          <Text style={styles.burst}>✨ 升級啦！✨</Text>
+          <AppText style={styles.burst}>{t('levelUpHeadline')}</AppText>
 
           {/* 新等級徽章 */}
           <View style={styles.rankBadge}>
-            <Text style={styles.rankEmoji}>{newRank.emoji}</Text>
+            <AppText style={styles.rankEmoji}>{newRank.emoji}</AppText>
           </View>
 
-          <Text style={styles.levelText}>Lv.{newRank.level}</Text>
-          <Text style={styles.rankName}>{newRank.name}</Text>
-          <Text style={styles.subtitle}>恭喜晉升新等級！</Text>
+          <AppText style={styles.levelText}>Lv.{newRank.level}</AppText>
+          <AppText style={styles.rankName}>{getRankName(newRank, language)}</AppText>
+          <AppText style={styles.subtitle}>{t('levelUpSubtitle')}</AppText>
 
-          <TouchableOpacity style={styles.btn} onPress={onClose} accessibilityLabel="繼續">
-            <Text style={styles.btnText}>繼續 🚀</Text>
+          <TouchableOpacity style={styles.btn} onPress={onClose} accessibilityLabel={t('levelUpA11y')}>
+            <AppText style={styles.btnText}>{t('levelUpBtn')}</AppText>
           </TouchableOpacity>
         </Animated.View>
       </View>

@@ -9,6 +9,7 @@
 
 import React, { Component, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import AppText from './AppText';
 import { Colors } from '../theme/colors';
 
 interface Props {
@@ -46,20 +47,20 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.container}>
-            <Text style={styles.emoji}>😵</Text>
-            <Text style={styles.title}>出了一點問題</Text>
-            <Text style={styles.subtitle}>
+            <AppText style={styles.emoji}>😵</AppText>
+            <AppText style={styles.title}>出了一點問題</AppText>
+            <AppText style={styles.subtitle}>
               App 遇到了意外錯誤。{'\n'}你的學習進度已安全儲存。
-            </Text>
+            </AppText>
             {__DEV__ && (
               <View style={styles.errorBox}>
-                <Text style={styles.errorText} numberOfLines={4}>
+                <AppText style={styles.errorText} numberOfLines={4}>
                   {this.state.errorMessage}
-                </Text>
+                </AppText>
               </View>
             )}
             <TouchableOpacity style={styles.btn} onPress={this.handleReset}>
-              <Text style={styles.btnText}>重新載入</Text>
+              <AppText style={styles.btnText}>重新載入</AppText>
             </TouchableOpacity>
           </View>
         </SafeAreaView>

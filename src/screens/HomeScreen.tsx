@@ -1,528 +1,610 @@
 /**
- * HomeScreen — Honey Bear Joy 風格 (Phase 6 UI Refresh)
+ * HomeScreen — 新版首頁（對應設計稿）
  *
- * 佈局（由上至下）：
- *   ① Header        — 頭像圓圈 + 問候語 + 連勝/星數/設定
- *   ② Daily Goal    — 暖黃卡片，顯示學習進度條
- *   ③ Categories    — 6 個主題分類卡（2 列），點按進入對應關卡
- *   ④ Daily Challen — 大橙色 CTA 按鈕（跳測驗）
- *   ⑤ Shortcuts     — 徽章 + My Pets 快捷入口
- *
- * 設計系統：Honey Bear Joy
- *   • 背景：暖奶油 #fbf9f1
- *   • 主色：琥珀黃 + 活力橙
- *   • 分類卡：天藍 / 薄荷 / 蜜黃 / 薰衣草 / 粉紅 / 蜜桃
- *   • 圓角：24px cards, pill buttons
+ * 佈局：
+ *   ① Header    — Hello [名字]！👋 + ⭐ 星數
+ *   ② 每日一句   — 藍紫漸層卡片
+ *   ③ 繼續學習   — 最近學習課程卡
+ *   ④ 學習主題   — 2×N Topic Grid
  */
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
+  View, Text, StyleSheet, TouchableOpacity,
+  ScrollView, SafeAreaView, Dimensions, Image,
 } from 'react-native';
+import AppText from '../components/AppText';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import FloatingXP from '../components/FloatingXP';
-import StreakBadge from '../components/StreakBadge';
-import { useProgressStore, getRankByXP } from '../store/useProgressStore';
+import { useProgressStore } from '../store/useProgressStore';
+import { pauseBGM, resumeBGM, skipToNextBGM } from '../services/bgmService';
 import { Colors } from '../theme/colors';
-import { getUnlockedBadges, buildBadgeStats, TOTAL_WORDS } from '../services/badgeService';
-import {
-  SEEDLING_WORDS,  SAPLING_WORDS,  TREE_WORDS,
-  SUNFLOWER_WORDS, RAINBOW_WORDS,  GALAXY_WORDS,
-  SEEDLING_IDS, SAPLING_IDS, TREE_IDS,
-  SUNFLOWER_IDS, RAINBOW_IDS, GALAXY_IDS,
-  BAMBOO_IDS, JADE_IDS,
-} from '../data/allWords';
-import { TREASURES } from '../data/treasures';
 import { useTranslation } from '../hooks/useTranslation';
+import { TOPICS } from '../data/topics';
+import { getTodayPhrase } from '../data/dailyPhrases';
+import { ALL_WORDS } from '../data/allWords';
+import { CREATURES } from '../data/creatures';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../navigation/AppNavigator';
 
-// ── 主題分類定義 ────────────────────────────────────────────────────
-interface CategoryDef {
-  id: string;
-  emoji: string;
-  nameKey: string;
-  words: typeof SEEDLING_WORDS;
-  ids: number[];
-  bgColor: string;
-  borderColor: string;
-  requiresPremium: boolean;
-}
-
-const CATEGORIES: CategoryDef[] = [
-  {
-    id: 'animals',   emoji: '🐶', nameKey: 'catAnimals',
-    words: SAPLING_WORDS,  ids: SAPLING_IDS,
-    bgColor: Colors.catAnimalsBg, borderColor: Colors.catAnimalsBorder,
-    requiresPremium: true,
-  },
-  {
-    id: 'nature',    emoji: '🌿', nameKey: 'catNature',
-    words: SEEDLING_WORDS, ids: SEEDLING_IDS,
-    bgColor: Colors.catNatureBg,  borderColor: Colors.catNatureBorder,
-    requiresPremium: false,
-  },
-  {
-    id: 'numbers',   emoji: '🔢', nameKey: 'catNumbers',
-    words: SUNFLOWER_WORDS, ids: SUNFLOWER_IDS,
-    bgColor: Colors.catNumbersBg, borderColor: Colors.catNumbersBorder,
-    requiresPremium: true,
-  },
-  {
-    id: 'colors',    emoji: '🎨', nameKey: 'catColors',
-    words: RAINBOW_WORDS,  ids: RAINBOW_IDS,
-    bgColor: Colors.catColorsBg,  borderColor: Colors.catColorsBorder,
-    requiresPremium: true,
-  },
-  {
-    id: 'family',    emoji: '👨‍👩‍👧', nameKey: 'catFamily',
-    words: GALAXY_WORDS,   ids: GALAXY_IDS,
-    bgColor: Colors.catFamilyBg,  borderColor: Colors.catFamilyBorder,
-    requiresPremium: true,
-  },
-  {
-    id: 'daily',     emoji: '📚', nameKey: 'catDaily',
-    words: TREE_WORDS,     ids: TREE_IDS,
-    bgColor: Colors.catDailyBg,   borderColor: Colors.catDailyBorder,
-    requiresPremium: true,
-  },
+// ── Daily Task IDs ────────────────────────────────────────────────────────────
+const DAILY_TASKS = [
+  { id: 'learn',    emojiZh: '📖', labelZh: '學習 1 個新字', labelEn: 'Learn 1 new character' },
+  { id: 'practice', emojiZh: '✏️', labelZh: '完成筆順練習',  labelEn: 'Complete stroke practice' },
+  { id: 'quiz',     emojiZh: '🎯', labelZh: '完成一次測驗',  labelEn: 'Complete a quiz' },
 ];
 
-// ── Component ────────────────────────────────────────────────────────
-export default function HomeScreen({ navigation }: any) {
-  const {
-    displayName, totalStars, wordProgress, streakDays, perfectQuizzes,
-    unlockedLessons, playerXP, treasures, isPremium,
-  } = useProgressStore();
-  const rank = getRankByXP(playerXP);
+const { width: SW } = Dimensions.get('window');
+
+type Props = { navigation: StackNavigationProp<RootStackParamList> };
+
+export default function HomeScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const storedName        = useProgressStore(s => s.displayName);
+  const totalStars        = useProgressStore(s => s.totalStars);
+  const wordProgress      = useProgressStore(s => s.wordProgress);
+  const language          = useProgressStore(s => s.language);
+  const bgmEnabled        = useProgressStore(s => s.bgmEnabled);
+  const toggleBGM         = useProgressStore(s => s.toggleBGM);
+  const foodCount         = useProgressStore(s => s.foodCount);
+  const dailyTasksDone    = useProgressStore(s => s.dailyTasksDone);
+  const dailyTasksDate    = useProgressStore(s => s.dailyTasksDate);
+  const dailyFoodClaimed  = useProgressStore(s => s.dailyFoodClaimed);
+  const claimDailyBonus   = useProgressStore(s => s.claimDailyBonus);
+  const completeDailyTask = useProgressStore(s => s.completeDailyTask);
+  const bossesDefeated    = useProgressStore(s => s.bossesDefeated);
+  const creatureProgress  = useProgressStore(s => s.creatureProgress);
 
-  // Badge stats
-  const badgeStats = buildBadgeStats(
-    wordProgress, totalStars, perfectQuizzes, streakDays,
-    SEEDLING_IDS, SAPLING_IDS, TREE_IDS,
-    SUNFLOWER_IDS, RAINBOW_IDS, GALAXY_IDS,
-    BAMBOO_IDS, JADE_IDS,
-  );
-  const { learnedCount, totalWords } = badgeStats;
-  const progressPercent = Math.round((learnedCount / totalWords) * 100);
-  const unlockedBadgeCount = getUnlockedBadges(badgeStats).length;
-  const ownedTreasureCount = Object.values(treasures).filter((c) => c > 0).length;
+  const hatchlingStartDate = useProgressStore(s => s.hatchlingStartDate);
+  const hatchlingDaysDone  = useProgressStore(s => s.hatchlingDaysDone);
+  const hatchlingComplete  = useProgressStore(s => s.hatchlingComplete);
+  const placementDone      = useProgressStore(s => s.placementDone);
 
-  // 浮動 +XP 動畫
-  const prevXPRef = useRef(playerXP);
-  const [showXP, setShowXP] = useState(false);
-  const [xpGained, setXpGained] = useState(0);
+  const today = new Date().toISOString().split('T')[0];
+  const todayTasks = dailyTasksDate === today ? dailyTasksDone : [];
+  const allTasksDone = todayTasks.length >= 3;
+  const showHatchling = !!hatchlingStartDate && !hatchlingComplete;
 
-  useFocusEffect(
-    useCallback(() => {
-      if (playerXP > prevXPRef.current) {
-        setXpGained(playerXP - prevXPRef.current);
-        setShowXP(true);
-        prevXPRef.current = playerXP;
-      } else {
-        prevXPRef.current = playerXP;
-      }
-    }, [playerXP]),
-  );
-
-  // 頭像首字母
-  const initials = (displayName ?? '?').charAt(0).toUpperCase();
-
-  // 分類卡點按
-  const handleCategoryPress = (cat: CategoryDef) => {
-    if (cat.requiresPremium && !isPremium) {
-      navigation.navigate('ParentLogin');
-      return;
-    }
-    const firstWord = cat.words[0];
-    if (!firstWord) return;
-    navigation.navigate('Lesson', { wordId: firstWord.id, lessonId: 1 });
+  // Find first unlocked creature for display
+  const BOSS_TO_CREATURE: Record<string, string> = {
+    boss_seedling: 'fox', boss_sapling: 'tiger', boss_tree: 'phoenix',
+    boss_sunflower: 'qilin', boss_rainbow: 'dragon',
+    boss_galaxy: 'pixiu', boss_bamboo: 'xuanwu',
   };
+  const unlockedCreatureIds = bossesDefeated.map(b => BOSS_TO_CREATURE[b]).filter(Boolean);
+  const featuredCreature = unlockedCreatureIds.length > 0
+    ? CREATURES.find(c => c.id === unlockedCreatureIds[unlockedCreatureIds.length - 1])
+    : null;
 
-  // 每個分類已學字數
-  const getLearnedCount = (ids: number[]) =>
-    ids.filter((id) => wordProgress[id]?.learned).length;
+  const [stars, setStars] = useState(totalStars);
+
+  useFocusEffect(useCallback(() => {
+    setStars(useProgressStore.getState().totalStars);
+  }, []));
+
+  useEffect(() => {
+    if (bgmEnabled) {
+      resumeBGM();
+    } else {
+      pauseBGM();
+    }
+  }, [bgmEnabled]);
+
+  const phrase = getTodayPhrase();
+  const lastUnfinished = ALL_WORDS.find(w => !wordProgress[w.id]?.learned);
+  const displayName = storedName || (language === 'en' ? 'Friend' : language === 'sc' ? '朋友' : '小朋友');
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={s.safe}>
+      <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 32 }}>
 
-        {/* ① Header ───────────────────────────────────────────── */}
-        <View style={styles.header}>
-          {/* 頭像圓圈 */}
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
-
-          {/* 問候 + 等級 */}
-          <View style={styles.headerCenter}>
-            <Text style={styles.greeting} numberOfLines={1}>
-              {t('greeting', { name: displayName })}
-            </Text>
-            <Text style={styles.rankLine} numberOfLines={1}>
-              {rank.emoji} Lv.{rank.level} · {playerXP} XP
-            </Text>
-          </View>
-
-          {/* 右側 badge row */}
-          <View style={styles.badgeRow}>
-            <StreakBadge streakDays={streakDays} />
+        {/* ① Header */}
+        <View style={s.header}>
+          <AppText style={s.greeting}>
+            {language === 'en' ? `Hello, ${displayName}! 👋` : `你好，${displayName}！👋`}
+          </AppText>
+          <View style={s.headerRight}>
+            <View style={s.starChip}>
+              <Ionicons name="star" size={16} color="#F59E0B" />
+              <AppText style={s.starCount}>{stars}</AppText>
+            </View>
             <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={() => navigation.navigate('Settings')}
-              accessibilityLabel="設定"
+              style={s.bgmBtn}
+              onPress={() => skipToNextBGM()}
+              onLongPress={toggleBGM}
+              activeOpacity={0.7}
             >
-              <Ionicons name="settings-outline" size={18} color={Colors.textSecondary} />
+              <Ionicons
+                name={bgmEnabled ? 'play-skip-forward' : 'musical-notes-outline'}
+                size={22}
+                color={bgmEnabled ? Colors.primary : Colors.textMuted}
+              />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* ② Daily Goal Card ──────────────────────────────────── */}
-        <View style={styles.goalCard}>
-          <View style={styles.goalHeader}>
-            <View>
-              <Text style={styles.goalLabel}>{t('dailyGoalTitle')}</Text>
-              <Text style={styles.goalProgress}>
-                {t('dailyGoalProgress', { n: learnedCount, total: TOTAL_WORDS })}
-              </Text>
+        {/* ① b 孵蛋挑戰橫幅 */}
+        {showHatchling && (
+          <TouchableOpacity
+            style={s.hatchBanner}
+            onPress={() => (navigation as any).navigate('HatchlingChallenge')}
+            activeOpacity={0.85}
+          >
+            <AppText style={s.hatchBannerEmoji}>🥚</AppText>
+            <View style={{ flex: 1 }}>
+              <AppText style={s.hatchBannerTitle}>
+                {language === 'en' ? '7-Day Hatch Challenge' : '7 天孵蛋挑戰'}
+              </AppText>
+              <AppText style={s.hatchBannerSub}>
+                {language === 'en'
+                  ? `Day ${hatchlingDaysDone}/7 — keep going!`
+                  : `第 ${hatchlingDaysDone}/7 天 — 繼續加油！`}
+              </AppText>
             </View>
-            <Text style={styles.goalPercent}>{progressPercent}%</Text>
+            <View style={s.hatchProgressRow}>
+              {Array.from({ length: 7 }, (_, i) => (
+                <View key={i} style={[s.hatchDot, i < hatchlingDaysDone && s.hatchDotDone]} />
+              ))}
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#B45309" />
+          </TouchableOpacity>
+        )}
+
+        {/* ① c 程度測試提示（只顯示一次） */}
+        {!placementDone && (
+          <TouchableOpacity
+            style={s.placementBanner}
+            onPress={() => (navigation as any).navigate('PlacementTest')}
+            activeOpacity={0.85}
+          >
+            <AppText style={s.placementEmoji}>🎓</AppText>
+            <View style={{ flex: 1 }}>
+              <AppText style={s.placementTitle}>
+                {language === 'en' ? 'Take Placement Test' : '程度測試'}
+              </AppText>
+              <AppText style={s.placementSub}>
+                {language === 'en' ? 'Find your starting level (2 min)' : '找出你的起點級別（2 分鐘）'}
+              </AppText>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#1D4ED8" />
+          </TouchableOpacity>
+        )}
+
+        {/* ② 每日一句 */}
+        <View style={s.phraseCard}>
+          <View style={s.phraseTop}>
+            <View style={s.phraseBadge}>
+              <AppText style={s.phraseBadgeText}>
+                {language === 'en' ? "Today's Phrase!" : '每日一句！'}
+              </AppText>
+            </View>
+            <AppText style={s.phraseEmoji}>{phrase.emoji}</AppText>
           </View>
-
-          {/* 進度條 */}
-          <View style={styles.goalBarTrack}>
-            <View style={[styles.goalBarFill, { width: `${Math.max(progressPercent, 2)}%` as any }]} />
-          </View>
-
-          <Text style={styles.goalSubtext}>{t('dailyGoalSubtext')}</Text>
-
-          {/* 浮動 +XP */}
-          <FloatingXP amount={xpGained} visible={showXP} onDone={() => setShowXP(false)} />
+          <AppText style={s.phraseZh}>{phrase.zh}</AppText>
+          <AppText style={s.phraseJyut}>{phrase.jyutping}</AppText>
+          {language === 'en' && (
+            <AppText style={s.phraseEn}>{phrase.en}</AppText>
+          )}
         </View>
 
-        {/* ③ Categories ───────────────────────────────────────── */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t('categoriesTitle')}</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Map')}>
-            <Text style={styles.seeAll}>{t('seeAll')}</Text>
+        {/* ③ 快捷功能 */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.quickRow}
+          style={s.quickRowScroll}
+        >
+          <TouchableOpacity
+            style={s.quickCard}
+            onPress={() => (navigation as any).navigate('Practice')}
+            activeOpacity={0.82}
+          >
+            <AppText style={s.quickEmoji}>✏️</AppText>
+            <AppText style={s.quickLabel}>
+              {language === 'en' ? 'Free Practice' : language === 'sc' ? '自由练习' : '自由練習'}
+            </AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.quickCard}
+            onPress={() => (navigation as any).navigate('QuizMenu')}
+            activeOpacity={0.82}
+          >
+            <AppText style={s.quickEmoji}>🎯</AppText>
+            <AppText style={s.quickLabel}>
+              {language === 'en' ? 'Quiz' : '測驗'}
+            </AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.quickCard}
+            onPress={() => (navigation as any).navigate('PracticeSheet')}
+            activeOpacity={0.82}
+          >
+            <AppText style={s.quickEmoji}>📄</AppText>
+            <AppText style={s.quickLabel}>
+              {language === 'en' ? 'Sheet' : language === 'sc' ? '练习纸' : '練習紙'}
+            </AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.quickCard}
+            onPress={() => (navigation as any).navigate('VoicePractice')}
+            activeOpacity={0.82}
+          >
+            <AppText style={s.quickEmoji}>🎤</AppText>
+            <AppText style={s.quickLabel}>
+              {language === 'en' ? 'Voice' : language === 'sc' ? '语音练习' : '語音練習'}
+            </AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.quickCard}
+            onPress={() => (navigation as any).navigate('Curriculum')}
+            activeOpacity={0.82}
+          >
+            <AppText style={s.quickEmoji}>📚</AppText>
+            <AppText style={s.quickLabel}>
+              {language === 'en' ? 'K1-K3' : 'K1-K3 課程'}
+            </AppText>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* ③b 每日任務 + 神獸快捷 */}
+        <View style={s.dailyRow}>
+          {/* Daily Tasks Card */}
+          <View style={s.dailyCard}>
+            <View style={s.dailyHeader}>
+              <AppText style={s.dailyTitle}>
+                {language === 'en' ? '📋 Daily Tasks' : '📋 每日任務'}
+              </AppText>
+              <View style={s.foodBadge}>
+                <AppText style={s.foodBadgeText}>🍖 {foodCount}</AppText>
+              </View>
+            </View>
+            {DAILY_TASKS.map(task => {
+              const done = todayTasks.includes(task.id);
+              return (
+                <View key={task.id} style={s.taskRow}>
+                  <AppText style={s.taskEmoji}>{task.emojiZh}</AppText>
+                  <AppText style={[s.taskLabel, done && s.taskLabelDone]} numberOfLines={1}>
+                    {language === 'en' ? task.labelEn : task.labelZh}
+                  </AppText>
+                  {done
+                    ? <Ionicons name="checkmark-circle" size={18} color="#16A34A" />
+                    : <View style={s.taskCircle} />}
+                </View>
+              );
+            })}
+            {allTasksDone && !dailyFoodClaimed && (
+              <TouchableOpacity style={s.claimBtn} onPress={claimDailyBonus}>
+                <AppText style={s.claimBtnText}>
+                  {language === 'en' ? '🎁 Claim +2 Bonus!' : '🎁 領取 +2 獎勵！'}
+                </AppText>
+              </TouchableOpacity>
+            )}
+            {allTasksDone && dailyFoodClaimed && (
+              <View style={s.allDoneBadge}>
+                <AppText style={s.allDoneText}>
+                  ✅ {language === 'en' ? 'All done today!' : '今日全部完成！'}
+                </AppText>
+              </View>
+            )}
+          </View>
+
+          {/* Creature Shortcut */}
+          <TouchableOpacity
+            style={s.creatureShortcut}
+            onPress={() => (navigation as any).navigate('Creature')}
+            activeOpacity={0.82}
+          >
+            <AppText style={s.creatureShortcutEmoji}>
+              {featuredCreature
+                ? featuredCreature.emoji
+                : '🥚'}
+            </AppText>
+            <AppText style={s.creatureShortcutTitle}>
+              {language === 'en' ? 'Sanctuary' : '神獸庇護所'}
+            </AppText>
+            <AppText style={s.creatureShortcutSub}>
+              {unlockedCreatureIds.length > 0
+                ? `${unlockedCreatureIds.length}/${CREATURES.length}`
+                : (language === 'en' ? 'Defeat a\nboss to start' : '擊敗 Boss\n解鎖神獸')}
+            </AppText>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.categoryGrid}>
-          {CATEGORIES.map((cat) => {
-            const locked = cat.requiresPremium && !isPremium;
-            const learned = getLearnedCount(cat.ids);
-            const total = cat.ids.length;
-            return (
-              <TouchableOpacity
-                key={cat.id}
-                style={[
-                  styles.categoryCard,
-                  { backgroundColor: cat.bgColor, borderColor: cat.borderColor },
-                  locked && styles.categoryCardLocked,
-                ]}
-                onPress={() => handleCategoryPress(cat)}
-                activeOpacity={0.8}
-                accessibilityLabel={`${t(cat.nameKey as any)}, ${learned}/${total} lessons`}
-              >
-                {/* 鎖定遮罩 */}
-                {locked && (
-                  <View style={styles.lockOverlay}>
-                    <Text style={styles.lockIcon}>🔒</Text>
-                  </View>
-                )}
-                <Text style={styles.catEmoji}>{cat.emoji}</Text>
-                <Text style={styles.catName}>{t(cat.nameKey as any)}</Text>
-                <Text style={styles.catProgress}>
-                  {t('lessonsProgress', { n: learned, total })}
-                </Text>
+        {/* ④ 繼續學習 */}
+        {lastUnfinished && (
+          <View style={s.section}>
+            <View style={s.sectionHeader}>
+              <AppText style={s.sectionTitle}>
+                {language === 'en' ? 'Continue Learning' : '繼續學習'}
+              </AppText>
+              <TouchableOpacity onPress={() => (navigation as any).navigate('Map')}>
+                <AppText style={s.sectionLink}>
+                  {language === 'en' ? 'See all ›' : '查看全部 ›'}
+                </AppText>
               </TouchableOpacity>
-            );
-          })}
+            </View>
+
+            <TouchableOpacity
+              style={s.continueCard}
+              onPress={() => navigation.navigate('Lesson', {
+                wordId: lastUnfinished.id,
+                lessonId: lastUnfinished.id,
+              })}
+              activeOpacity={0.85}
+            >
+              <View style={s.continueCoverBox}>
+                <AppText style={s.continueCoverEmoji}>
+                  {(lastUnfinished as any).emoji ?? '📖'}
+                </AppText>
+              </View>
+              <View style={s.continueInfo}>
+                <AppText style={s.continueName}>{lastUnfinished.character}</AppText>
+                <AppText style={s.continueSub}>
+                  {language === 'en' ? lastUnfinished.meaning_en : lastUnfinished.meaning_zh}
+                </AppText>
+                <View style={s.progressRow}>
+                  <View style={s.progressTrack}>
+                    <View style={[s.progressFill, { width: '0%' }]} />
+                  </View>
+                  <AppText style={s.progressPct}>0%</AppText>
+                </View>
+              </View>
+              <View style={s.continueArrow}>
+                <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ④ 學習主題 */}
+        <View style={s.section}>
+          <AppText style={s.sectionTitle}>
+            {language === 'en' ? 'Topics' : '學習主題'}
+          </AppText>
+          <View style={s.topicGrid}>
+            {TOPICS.map(topic => (
+              <TouchableOpacity
+                key={topic.id}
+                style={[s.topicCard, {
+                  backgroundColor: topic.bgColor,
+                }]}
+                onPress={() => (navigation as any).navigate('TopicDetail', { topicId: topic.id })}
+                activeOpacity={0.82}
+              >
+                <Image source={topic.iconPng} style={s.topicIcon} resizeMode="contain" />
+                <AppText style={s.topicName} numberOfLines={1}>
+                  {language === 'en' ? topic.title_en :
+                   language === 'sc' ? topic.title_sc : topic.title_zh}
+                </AppText>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-
-        {/* ④ Daily Challenge CTA ─────────────────────────────── */}
-        <TouchableOpacity
-          style={styles.challengeBtn}
-          onPress={() => navigation.navigate('QuizMenu')}
-          activeOpacity={0.85}
-          accessibilityLabel={t('dailyChallenge')}
-        >
-          <Ionicons name="game-controller" size={22} color={Colors.white} />
-          <Text style={styles.challengeText}>{t('dailyChallenge')}</Text>
-          <View style={styles.challengeArrow}>
-            <Ionicons name="arrow-forward" size={18} color={Colors.white} />
-          </View>
-        </TouchableOpacity>
-
-        {/* ⑤ Shortcuts ─────────────────────────────────────────── */}
-        <TouchableOpacity
-          style={styles.shortcut}
-          onPress={() => navigation.navigate('Badges')}
-        >
-          <Text style={styles.shortcutEmoji}>🏅</Text>
-          <View style={styles.shortcutInfo}>
-            <Text style={styles.shortcutTitle}>{t('myBadges')}</Text>
-            <Text style={styles.shortcutDesc}>
-              {t('badgesCollected', { n: unlockedBadgeCount, total: 7 })}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.shortcut, { marginTop: 10 }]}
-          onPress={() => navigation.navigate('Treasure')}
-        >
-          <Text style={styles.shortcutEmoji}>🥚</Text>
-          <View style={styles.shortcutInfo}>
-            <Text style={styles.shortcutTitle}>{t('treasureVault')}</Text>
-            <Text style={styles.shortcutDesc}>
-              {t('treasuresCollected', { n: ownedTreasureCount, total: TREASURES.length })}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
-        </TouchableOpacity>
 
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ── Styles ───────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: Colors.primaryBg },
-  container: { padding: 20, paddingBottom: 48, gap: 0 },
+const CARD_W = (SW - 48 - 12) / 2;
 
-  // ① Header
+const s = StyleSheet.create({
+  safe:   { flex: 1, backgroundColor: Colors.primaryBg },
+  scroll: { flex: 1 },
+
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
-  },
-  avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  avatarText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.white,
-  },
-  headerCenter: { flex: 1, minWidth: 0 },
-  greeting: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  rankLine: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexShrink: 0,
-  },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.primaryMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // ② Daily Goal Card
-  goalCard: {
-    backgroundColor: Colors.goalCard,
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 24,
-    borderWidth: 1.5,
-    borderColor: Colors.goalCardBorder,
-    shadowColor: Colors.primary,
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  goalHeader: {
-    flexDirection: 'row',
+    flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 14,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10,
   },
-  goalLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.primaryDeep,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: 4,
+  greeting:  { fontSize: 26, fontWeight: '700', color: Colors.text, flex: 1 },
+  headerRight: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
   },
-  goalProgress: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.text,
+  starChip:  {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: Colors.primaryBg, paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 20,
+    shadowColor: '#C4BFA8', shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55, shadowRadius: 10, elevation: 6,
+    borderTopWidth: 1.5, borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5, borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)', borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)', borderRightColor: 'rgba(180,175,155,0.4)',
   },
-  goalPercent: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: Colors.primaryDark,
-  },
-  goalBarTrack: {
-    height: 12,
-    backgroundColor: Colors.goalBarTrack,
-    borderRadius: 6,
-    overflow: 'hidden',
-    marginBottom: 10,
-  },
-  goalBarFill: {
-    height: '100%',
-    backgroundColor: Colors.goalBar,
-    borderRadius: 6,
-  },
-  goalSubtext: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.primaryDeep,
-    opacity: 0.75,
+  starCount: { fontSize: 19, fontWeight: '700', color: '#B45309' },
+  bgmBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: Colors.primaryBg,
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#C4BFA8', shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55, shadowRadius: 10, elevation: 6,
+    borderTopWidth: 1.5, borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5, borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)', borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)', borderRightColor: 'rgba(180,175,155,0.4)',
   },
 
-  // ③ Categories
+  phraseCard: {
+    marginHorizontal: 20, marginTop: 4, marginBottom: 4,
+    borderRadius: 20, padding: 18,
+    backgroundColor: '#4F46E5',
+    shadowColor: '#4F46E5', shadowOpacity: 0.35, shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 }, elevation: 8,
+  },
+  phraseTop: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'flex-start', marginBottom: 10,
+  },
+  phraseBadge: {
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12,
+  },
+  phraseBadgeText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  phraseEmoji:     { fontSize: 38 },
+  phraseZh:        { fontSize: 25, fontWeight: '700', color: '#fff', marginBottom: 6 },
+  phraseJyut:      { fontSize: 16, color: 'rgba(255,255,255,0.75)', fontStyle: 'italic' },
+  phraseEn:        { fontSize: 16, color: 'rgba(255,255,255,0.80)', marginTop: 4 },
+
+  quickRowScroll: {
+    marginTop: 14,
+  },
+  quickRow: {
+    flexDirection: 'row', gap: 10,
+    paddingHorizontal: 20, paddingRight: 24,
+  },
+  quickCard: {
+    width: 80, alignItems: 'center', paddingVertical: 14, borderRadius: 16,
+    backgroundColor: Colors.primaryBg, gap: 6,
+    shadowColor: '#C4BFA8', shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55, shadowRadius: 10, elevation: 6,
+    borderTopWidth: 1.5, borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5, borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)', borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)', borderRightColor: 'rgba(180,175,155,0.4)',
+  },
+  quickEmoji: { fontSize: 28 },
+  quickLabel: { fontSize: 12, fontWeight: '700', color: Colors.textSecondary, textAlign: 'center' },
+
+  // ── Hatchling banner ──
+  hatchBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginHorizontal: 20, marginTop: 10, marginBottom: 2,
+    backgroundColor: '#FEF9C3', borderRadius: 14, padding: 12,
+    borderWidth: 2, borderColor: '#FDE68A',
+  },
+  hatchBannerEmoji: { fontSize: 28 },
+  hatchBannerTitle: { fontSize: 15, fontWeight: '800', color: '#92400E' },
+  hatchBannerSub:   { fontSize: 12, color: '#B45309' },
+  hatchProgressRow: { flexDirection: 'row', gap: 3 },
+  hatchDot: {
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: Colors.borderLight,
+  },
+  hatchDotDone: { backgroundColor: Colors.primary },
+
+  // ── Placement banner ──
+  placementBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginHorizontal: 20, marginTop: 8, marginBottom: 2,
+    backgroundColor: '#EFF6FF', borderRadius: 14, padding: 12,
+    borderWidth: 2, borderColor: '#BFDBFE',
+  },
+  placementEmoji: { fontSize: 24 },
+  placementTitle: { fontSize: 15, fontWeight: '800', color: '#1E40AF' },
+  placementSub:   { fontSize: 12, color: '#3B82F6' },
+
+  // ── Daily Tasks + Creature Row ──
+  dailyRow: {
+    flexDirection: 'row', gap: 10,
+    paddingHorizontal: 20, marginTop: 14,
+  },
+  dailyCard: {
+    flex: 1.7, backgroundColor: Colors.primaryBg, borderRadius: 16, padding: 13,
+    shadowColor: '#C4BFA8', shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.45, shadowRadius: 10, elevation: 5,
+    borderTopWidth: 1.5, borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5, borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)', borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)', borderRightColor: 'rgba(180,175,155,0.4)',
+    gap: 7,
+  },
+  dailyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  dailyTitle:  { fontSize: 14, fontWeight: '800', color: Colors.text },
+  foodBadge: {
+    backgroundColor: '#FEF3C7', borderRadius: 10,
+    paddingHorizontal: 8, paddingVertical: 2,
+    borderWidth: 1, borderColor: '#FDE68A',
+  },
+  foodBadgeText: { fontSize: 13, fontWeight: '700', color: '#B45309' },
+  taskRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  taskEmoji: { fontSize: 15, width: 22 },
+  taskLabel: { flex: 1, fontSize: 12, color: Colors.textSecondary, fontWeight: '600' },
+  taskLabelDone: { textDecorationLine: 'line-through', color: Colors.textMuted },
+  taskCircle: {
+    width: 17, height: 17, borderRadius: 9,
+    borderWidth: 2, borderColor: Colors.borderLight,
+  },
+  claimBtn: {
+    backgroundColor: '#DCFCE7', borderRadius: 10,
+    paddingVertical: 6, alignItems: 'center',
+    borderWidth: 1.5, borderColor: '#86EFAC',
+  },
+  claimBtnText: { fontSize: 12, fontWeight: '800', color: '#15803D' },
+  allDoneBadge: {
+    backgroundColor: '#F0FDF4', borderRadius: 10,
+    paddingVertical: 6, alignItems: 'center',
+  },
+  allDoneText: { fontSize: 12, fontWeight: '700', color: '#16A34A' },
+
+  creatureShortcut: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 14, borderRadius: 16,
+    backgroundColor: Colors.primaryBg, gap: 4,
+    shadowColor: '#C4BFA8', shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.45, shadowRadius: 10, elevation: 5,
+    borderTopWidth: 1.5, borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5, borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)', borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)', borderRightColor: 'rgba(180,175,155,0.4)',
+  },
+  creatureShortcutEmoji: { fontSize: 40 },
+  creatureShortcutTitle: { fontSize: 12, fontWeight: '800', color: Colors.text, textAlign: 'center' },
+  creatureShortcutSub:   { fontSize: 10, color: Colors.textMuted, textAlign: 'center', lineHeight: 14 },
+
+  section: { marginTop: 22, paddingHorizontal: 20 },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.text,
+  sectionTitle: { fontSize: 22, fontWeight: '700', color: Colors.text },
+  sectionLink:  { fontSize: 18, color: Colors.primary, fontWeight: '600' },
+
+  continueCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: Colors.primaryBg, borderRadius: 16, padding: 14,
+    shadowColor: '#C4BFA8', shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.55, shadowRadius: 10, elevation: 6,
+    borderTopWidth: 1.5, borderLeftWidth: 1.5,
+    borderBottomWidth: 1.5, borderRightWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.95)', borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(180,175,155,0.4)', borderRightColor: 'rgba(180,175,155,0.4)',
   },
-  seeAll: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.secondary,
+  continueCoverBox: {
+    width: 56, height: 56, borderRadius: 12,
+    backgroundColor: Colors.primaryBg,
+    justifyContent: 'center', alignItems: 'center',
   },
-  categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
+  continueCoverEmoji: { fontSize: 38 },
+  continueInfo:  { flex: 1 },
+  continueName:  { fontSize: 21, fontWeight: '700', color: Colors.text },
+  continueSub:   { fontSize: 15, color: Colors.textMuted, marginTop: 2, marginBottom: 8 },
+  progressRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  progressTrack: {
+    flex: 1, height: 6, backgroundColor: Colors.borderLight,
+    borderRadius: 3, overflow: 'hidden',
   },
-  categoryCard: {
-    width: '47%',
-    borderRadius: 24,
-    borderWidth: 2,
-    padding: 18,
-    alignItems: 'center',
-    gap: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-    overflow: 'hidden',
-  },
-  categoryCardLocked: {
-    opacity: 0.65,
-  },
-  lockOverlay: {
-    position: 'absolute',
-    top: 8,
-    right: 10,
-  },
-  lockIcon: { fontSize: 14 },
-  catEmoji: { fontSize: 36, lineHeight: 44 },
-  catName: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  catProgress: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.textMuted,
-    marginTop: 2,
+  progressFill:  { height: 6, backgroundColor: Colors.primary, borderRadius: 3 },
+  progressPct:   { fontSize: 14, color: Colors.textMuted, width: 28 },
+  continueArrow: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: Colors.primaryBg,
+    justifyContent: 'center', alignItems: 'center',
   },
 
-  // ④ Daily Challenge Button
-  challengeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.secondary,
-    borderRadius: 999,
-    paddingVertical: 18,
-    paddingHorizontal: 28,
-    marginBottom: 24,
-    gap: 10,
-    // 3D lip effect (Honey Bear style)
-    borderBottomWidth: 4,
-    borderBottomColor: Colors.secondaryDark,
-    shadowColor: Colors.secondary,
-    shadowOpacity: 0.35,
+  topicGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 },
+  topicCard: {
+    width: CARD_W, paddingVertical: 16, paddingHorizontal: 10,
+    borderRadius: 20,
+    alignItems: 'center', gap: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    elevation: 7,
   },
-  challengeText: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.white,
-    letterSpacing: 0.3,
-  },
-  challengeArrow: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // ⑤ Shortcuts
-  shortcut: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: 18,
-    padding: 16,
-    gap: 12,
-    borderWidth: 1.5,
-    borderColor: Colors.borderLight,
-    shadowColor: Colors.text,
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  shortcutEmoji: { fontSize: 28 },
-  shortcutInfo: { flex: 1 },
-  shortcutTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  shortcutDesc: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
+  topicEmoji: { fontSize: 48 },
+  topicIcon:  { width: CARD_W - 20, height: CARD_W - 20 },
+  topicName:  { fontSize: 18, fontWeight: '700', color: Colors.text, textAlign: 'center' },
 });

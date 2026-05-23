@@ -18,29 +18,21 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
+import AppText from '../../components/AppText';
 import { Colors } from '../../theme/colors';
-import { getRankByXP, getNextRank, PLAYER_RANKS, BOSSES } from '../../store/useProgressStore';
+import { getRankByXP, getNextRank, getRankName, getBossName, PLAYER_RANKS, BOSSES, useProgressStore } from '../../store/useProgressStore';
 import {
   SEEDLING_WORDS, SAPLING_WORDS, TREE_WORDS,
   SUNFLOWER_WORDS, RAINBOW_WORDS, GALAXY_WORDS,
 } from '../../data/allWords';
 import { QRUserData } from '../../services/qrAuthService';
 import { Word } from '../../types/word';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface Props {
   userData: QRUserData;
   onLogout: () => void;
 }
-
-// ── Level 定義（標籤 + 顏色） ───────────────────────────────────────
-const LEVEL_META = [
-  { key: 'seedling',  label: '🌱 幼苗級',  words: SEEDLING_WORDS,  color: '#10B981', bg: '#ECFDF5' },
-  { key: 'sapling',   label: '🌳 小樹級',  words: SAPLING_WORDS,   color: '#F59E0B', bg: '#FFFBEB' },
-  { key: 'tree',      label: '🏆 大樹級',  words: TREE_WORDS,      color: '#EF4444', bg: '#FEF2F2' },
-  { key: 'sunflower', label: '🌻 向日葵級', words: SUNFLOWER_WORDS, color: '#F97316', bg: '#FFF7ED' },
-  { key: 'rainbow',   label: '🌈 彩虹級',  words: RAINBOW_WORDS,   color: '#8B5CF6', bg: '#F5F3FF' },
-  { key: 'galaxy',    label: '⭐ 星河級',  words: GALAXY_WORDS,    color: '#3B82F6', bg: '#EFF6FF' },
-] as const;
 
 // ── 字詞格子 ────────────────────────────────────────────────────────
 function WordChip({
@@ -48,29 +40,36 @@ function WordChip({
   learned,
   correct,
   wrong,
+  learnedLabel,
+  unlearnedLabel,
+  a11yTemplate,
 }: {
   word: Word;
   learned: boolean;
   correct: number;
   wrong: number;
+  learnedLabel: string;
+  unlearnedLabel: string;
+  a11yTemplate: string;
 }) {
   const [showTip, setShowTip] = useState(false);
+  const statusLabel = learned ? learnedLabel : unlearnedLabel;
 
   return (
     <TouchableOpacity
       style={[styles.wordChip, learned && styles.wordChipLearned]}
       onPress={() => setShowTip((v) => !v)}
-      accessibilityLabel={`${word.character}，${learned ? '已學' : '未學'}`}
+      accessibilityLabel={a11yTemplate.replace('{char}', word.character).replace('{status}', statusLabel)}
     >
-      <Text style={[styles.wordChipChar, learned && styles.wordChipCharLearned]}>
+      <AppText style={[styles.wordChipChar, learned && styles.wordChipCharLearned]}>
         {word.character}
-      </Text>
-      {learned && <Text style={styles.wordChipCheck}>✓</Text>}
+      </AppText>
+      {learned && <AppText style={styles.wordChipCheck}>✓</AppText>}
       {showTip && (
         <View style={styles.tooltip}>
-          <Text style={styles.tooltipTitle}>{word.character}</Text>
-          <Text style={styles.tooltipSub}>{word.jyutping}  {word.meaning_zh}</Text>
-          <Text style={styles.tooltipStats}>✅ {correct}  ❌ {wrong}</Text>
+          <AppText style={styles.tooltipTitle}>{word.character}</AppText>
+          <AppText style={styles.tooltipSub}>{word.jyutping}  {word.meaning_zh}</AppText>
+          <AppText style={styles.tooltipStats}>✅ {correct}  ❌ {wrong}</AppText>
         </View>
       )}
     </TouchableOpacity>
@@ -79,6 +78,19 @@ function WordChip({
 
 // ── 主組件 ─────────────────────────────────────────────────────────
 export default function WebDashboardScreen({ userData, onLogout }: Props) {
+  const { t } = useTranslation();
+  const language = useProgressStore((s) => s.language);
+
+  // ── Level 定義（標籤從 i18n 取得） ───────────────────────────────
+  const LEVEL_META = [
+    { key: 'seedling',  label: t('levelSeedling'),  words: SEEDLING_WORDS,  color: '#10B981', bg: '#ECFDF5' },
+    { key: 'sapling',   label: t('levelSapling'),   words: SAPLING_WORDS,   color: '#F59E0B', bg: '#FFFBEB' },
+    { key: 'tree',      label: t('levelTree'),      words: TREE_WORDS,      color: '#EF4444', bg: '#FEF2F2' },
+    { key: 'sunflower', label: t('levelSunflower'), words: SUNFLOWER_WORDS, color: '#F97316', bg: '#FFF7ED' },
+    { key: 'rainbow',   label: t('levelRainbow'),   words: RAINBOW_WORDS,   color: '#8B5CF6', bg: '#F5F3FF' },
+    { key: 'galaxy',    label: t('levelGalaxy'),    words: GALAXY_WORDS,    color: '#3B82F6', bg: '#EFF6FF' },
+  ];
+
   const rank     = getRankByXP(userData.playerXP);
   const nextRank = getNextRank(rank.level);
   const xpToNext = nextRank ? nextRank.xpRequired - userData.playerXP : 0;
@@ -104,11 +116,11 @@ export default function WebDashboardScreen({ userData, onLogout }: Props) {
     >
       {/* ── 頂部欄 ─────────────────────────────────────────────── */}
       <View style={styles.topBar}>
-        <Text style={styles.appName}>🐤 CantoKids</Text>
+        <AppText style={styles.appName}>🐤 CantoKids</AppText>
         <View style={styles.topRight}>
-          <Text style={styles.syncLabel}>同步於 {syncTime}</Text>
+          <AppText style={styles.syncLabel}>{t('webSyncLabel').replace('{time}', syncTime)}</AppText>
           <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
-            <Text style={styles.logoutBtnText}>登出</Text>
+            <AppText style={styles.logoutBtnText}>{t('webLogout')}</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -116,16 +128,18 @@ export default function WebDashboardScreen({ userData, onLogout }: Props) {
       {/* ── 玩家卡 ─────────────────────────────────────────────── */}
       <View style={styles.playerCard}>
         <View style={styles.playerLeft}>
-          <Text style={styles.playerEmoji}>{rank.emoji}</Text>
+          <AppText style={styles.playerEmoji}>{rank.emoji}</AppText>
           <View>
-            <Text style={styles.playerName}>{userData.displayName}</Text>
-            <Text style={styles.playerRank}>Lv.{rank.level} {rank.name}</Text>
+            <AppText style={styles.playerName}>{userData.displayName}</AppText>
+            <AppText style={styles.playerRank}>Lv.{rank.level} {getRankName(rank, language)}</AppText>
           </View>
         </View>
         <View style={styles.playerRight}>
-          <Text style={styles.playerXP}>{userData.playerXP} XP</Text>
+          <AppText style={styles.playerXP}>{userData.playerXP} XP</AppText>
           {nextRank && (
-            <Text style={styles.playerXPSub}>距 {nextRank.name} 還需 {xpToNext} XP</Text>
+            <AppText style={styles.playerXPSub}>
+              {t('webXPToNext').replace('{name}', getRankName(nextRank, language)).replace('{xp}', String(xpToNext))}
+            </AppText>
           )}
           {/* XP 進度條 */}
           <View style={styles.xpBarBg}>
@@ -137,32 +151,32 @@ export default function WebDashboardScreen({ userData, onLogout }: Props) {
       {/* ── 體力 + 連續天數 ─────────────────────────────────────── */}
       <View style={styles.statRow}>
         <View style={[styles.statCard, { flex: 1 }]}>
-          <Text style={styles.statEmoji}>❤️</Text>
-          <Text style={styles.statValue}>{userData.totalStars}</Text>
-          <Text style={styles.statLabel}>星星</Text>
+          <AppText style={styles.statEmoji}>❤️</AppText>
+          <AppText style={styles.statValue}>{userData.totalStars}</AppText>
+          <AppText style={styles.statLabel}>{t('webStatStars')}</AppText>
         </View>
         <View style={[styles.statCard, { flex: 1 }]}>
-          <Text style={styles.statEmoji}>🔥</Text>
-          <Text style={styles.statValue}>{userData.streakDays}</Text>
-          <Text style={styles.statLabel}>連續天數</Text>
+          <AppText style={styles.statEmoji}>🔥</AppText>
+          <AppText style={styles.statValue}>{userData.streakDays}</AppText>
+          <AppText style={styles.statLabel}>{t('webStatStreak')}</AppText>
         </View>
         <View style={[styles.statCard, { flex: 1 }]}>
-          <Text style={styles.statEmoji}>⭐</Text>
-          <Text style={styles.statValue}>{userData.totalStars}</Text>
-          <Text style={styles.statLabel}>星星</Text>
+          <AppText style={styles.statEmoji}>⭐</AppText>
+          <AppText style={styles.statValue}>{userData.totalStars}</AppText>
+          <AppText style={styles.statLabel}>{t('webStatStars')}</AppText>
         </View>
         <View style={[styles.statCard, { flex: 1 }]}>
-          <Text style={styles.statEmoji}>🎯</Text>
-          <Text style={styles.statValue}>{correctRate}%</Text>
-          <Text style={styles.statLabel}>答對率</Text>
+          <AppText style={styles.statEmoji}>🎯</AppText>
+          <AppText style={styles.statValue}>{correctRate}%</AppText>
+          <AppText style={styles.statLabel}>{t('webStatAccuracy')}</AppText>
         </View>
       </View>
 
       {/* ── 學習進度條 ──────────────────────────────────────────── */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>📊 學習進度</Text>
-          <Text style={styles.sectionBadge}>{learnedCount} / {totalWords}</Text>
+          <AppText style={styles.sectionTitle}>{t('webProgressTitle')}</AppText>
+          <AppText style={styles.sectionBadge}>{learnedCount} / {totalWords}</AppText>
         </View>
         <View style={styles.progressBarBg}>
           <View style={[
@@ -170,14 +184,14 @@ export default function WebDashboardScreen({ userData, onLogout }: Props) {
             { width: `${Math.round((learnedCount / totalWords) * 100)}%` as any },
           ]} />
         </View>
-        <Text style={styles.progressPct}>
-          {Math.round((learnedCount / totalWords) * 100)}% 完成
-        </Text>
+        <AppText style={styles.progressPct}>
+          {t('webProgressPct').replace('{pct}', String(Math.round((learnedCount / totalWords) * 100)))}
+        </AppText>
       </View>
 
       {/* ── Boss 狀態 ────────────────────────────────────────────── */}
       <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>⚔️ Boss 戰</Text>
+        <AppText style={styles.sectionTitle}>{t('webBossTitle')}</AppText>
         <View style={styles.bossGrid}>
           {BOSSES.map((boss) => {
             const defeated = userData.bossesDefeated.includes(boss.id);
@@ -190,13 +204,13 @@ export default function WebDashboardScreen({ userData, onLogout }: Props) {
                   defeated && { borderColor: boss.color },
                 ]}
               >
-                <Text style={styles.bossChipEmoji}>{boss.emoji}</Text>
-                <Text style={[styles.bossChipName, { color: boss.color }]}>
-                  {boss.name}
-                </Text>
-                <Text style={styles.bossChipStatus}>
-                  {defeated ? '✅ 已擊敗' : '🔒 未挑戰'}
-                </Text>
+                <AppText style={styles.bossChipEmoji}>{boss.emoji}</AppText>
+                <AppText style={[styles.bossChipName, { color: boss.color }]}>
+                  {getBossName(boss, language)}
+                </AppText>
+                <AppText style={styles.bossChipStatus}>
+                  {defeated ? t('webBossDefeated') : t('webBossUnbeaten')}
+                </AppText>
               </View>
             );
           })}
@@ -209,10 +223,10 @@ export default function WebDashboardScreen({ userData, onLogout }: Props) {
         return (
           <View key={key} style={[styles.sectionCard, { borderLeftWidth: 4, borderLeftColor: color }]}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color }]}>{label}</Text>
-              <Text style={[styles.sectionBadge, { backgroundColor: bg, color }]}>
+              <AppText style={[styles.sectionTitle, { color }]}>{label}</AppText>
+              <AppText style={[styles.sectionBadge, { backgroundColor: bg, color }]}>
                 {levelLearned} / {words.length}
-              </Text>
+              </AppText>
             </View>
             <View style={styles.wordGrid}>
               {words.map((w) => {
@@ -224,6 +238,9 @@ export default function WebDashboardScreen({ userData, onLogout }: Props) {
                     learned={p?.learned ?? false}
                     correct={p?.correctCount ?? 0}
                     wrong={p?.wrongCount ?? 0}
+                    learnedLabel={t('webWordLearned')}
+                    unlearnedLabel={t('webWordUnlearned')}
+                    a11yTemplate={t('webWordA11y')}
                   />
                 );
               })}
@@ -233,9 +250,9 @@ export default function WebDashboardScreen({ userData, onLogout }: Props) {
       })}
 
       {/* ── 底部 ─────────────────────────────────────────────────── */}
-      <Text style={styles.footer}>
-        CantoKids — 資料僅從手機同步，不會儲存在瀏覽器
-      </Text>
+      <AppText style={styles.footer}>
+        {t('webFooter')}
+      </AppText>
     </ScrollView>
   );
 }

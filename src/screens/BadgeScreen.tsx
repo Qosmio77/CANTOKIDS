@@ -17,17 +17,20 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
+import AppText from '../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { useProgressStore } from '../store/useProgressStore';
-import { BADGES, getUnlockedBadges, buildBadgeStats } from '../services/badgeService';
+import { BADGES, getUnlockedBadges, buildBadgeStats, getBadgeLocalized } from '../services/badgeService';
+import { useTranslation } from '../hooks/useTranslation';
 import {
   SEEDLING_IDS, SAPLING_IDS, TREE_IDS,
   SUNFLOWER_IDS, RAINBOW_IDS, GALAXY_IDS,
 } from '../data/allWords';
 
 export default function BadgeScreen({ navigation }: any) {
-  const { totalStars, wordProgress, perfectQuizzes, streakDays } = useProgressStore();
+  const { totalStars, wordProgress, perfectQuizzes, streakDays, language } = useProgressStore();
+  const { t } = useTranslation();
 
   const stats = buildBadgeStats(
     wordProgress, totalStars, perfectQuizzes, streakDays,
@@ -51,18 +54,20 @@ export default function BadgeScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>我的徽章</Text>
+        <AppText style={styles.topTitle}>{t('badgeTitle')}</AppText>
         <View style={styles.countBadge}>
-          <Text style={styles.countText}>{unlockedCount} / {BADGES.length}</Text>
+          <AppText style={styles.countText}>{unlockedCount} / {BADGES.length}</AppText>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.container}>
         {/* 進度橫條 */}
         <View style={styles.progressCard}>
-          <Text style={styles.progressLabel}>
-            已解鎖 {unlockedCount} 個，還有 {BADGES.length - unlockedCount} 個等待收集！
-          </Text>
+          <AppText style={styles.progressLabel}>
+            {t('badgeProgressLabel')
+              .replace('{n}', String(unlockedCount))
+              .replace('{remaining}', String(BADGES.length - unlockedCount))}
+          </AppText>
           <View style={styles.progressBar}>
             <View
               style={[styles.progressFill, { width: `${(unlockedCount / BADGES.length) * 100}%` }]}
@@ -74,32 +79,33 @@ export default function BadgeScreen({ navigation }: any) {
         <View style={styles.grid}>
           {BADGES.map((badge) => {
             const unlocked = unlockedIds.has(badge.id);
+            const { name, description } = getBadgeLocalized(badge, language);
             return (
               <View
                 key={badge.id}
                 style={[styles.badgeCard, unlocked ? styles.badgeUnlocked : styles.badgeLocked]}
-                accessibilityLabel={`${badge.name}：${unlocked ? '已解鎖' : '未解鎖'}`}
+                accessibilityLabel={`${name}：${unlocked ? t('badgeAcquired') : t('badgeLocked')}`}
               >
                 {/* 徽章圖示 */}
-                <Text style={[styles.badgeEmoji, !unlocked && styles.badgeEmojiLocked]}>
+                <AppText style={[styles.badgeEmoji, !unlocked && styles.badgeEmojiLocked]}>
                   {unlocked ? badge.emoji : '🔒'}
-                </Text>
+                </AppText>
 
                 {/* 名稱 */}
-                <Text style={[styles.badgeName, !unlocked && styles.badgeNameLocked]}>
-                  {badge.name}
-                </Text>
+                <AppText style={[styles.badgeName, !unlocked && styles.badgeNameLocked]}>
+                  {name}
+                </AppText>
 
                 {/* 條件 / 說明 */}
-                <Text style={[styles.badgeDesc, !unlocked && styles.badgeDescLocked]} numberOfLines={2}>
-                  {badge.description}
-                </Text>
+                <AppText style={[styles.badgeDesc, !unlocked && styles.badgeDescLocked]} numberOfLines={2}>
+                  {description}
+                </AppText>
 
                 {/* 解鎖狀態標籤 */}
                 {unlocked && (
                   <View style={styles.unlockedTag}>
                     <Ionicons name="checkmark" size={12} color={Colors.white} />
-                    <Text style={styles.unlockedTagText}>已獲得</Text>
+                    <AppText style={styles.unlockedTagText}>{t('badgeAcquired')}</AppText>
                   </View>
                 )}
               </View>
@@ -109,12 +115,12 @@ export default function BadgeScreen({ navigation }: any) {
 
         {/* 當前進度提示 */}
         <View style={styles.statsCard}>
-          <Text style={styles.statsTitle}>📊 目前進度</Text>
+          <AppText style={styles.statsTitle}>{t('badgeStatsTitle')}</AppText>
           <View style={styles.statsRow}>
-            <StatItem icon="star" color={Colors.primary} label="星星" value={String(totalStars)} />
-            <StatItem icon="book" color={Colors.cantonese} label="已學漢字" value={`${learnedCount}/${totalWords}`} />
-            <StatItem icon="trophy" color="#F59E0B" label="完美測驗" value={String(perfectQuizzes)} />
-            <StatItem icon="flame" color="#EF4444" label="連勝天數" value={String(streakDays)} />
+            <StatItem icon="star"   color={Colors.primary}   label={t('statStars')}   value={String(totalStars)} />
+            <StatItem icon="book"   color={Colors.cantonese} label={t('statLearned')} value={`${learnedCount}/${totalWords}`} />
+            <StatItem icon="trophy" color="#F59E0B"           label={t('statPerfect')} value={String(perfectQuizzes)} />
+            <StatItem icon="flame"  color="#EF4444"           label={t('statStreak')}  value={String(streakDays)} />
           </View>
         </View>
       </ScrollView>
@@ -133,8 +139,8 @@ function StatItem({
   return (
     <View style={styles.statItem}>
       <Ionicons name={icon} size={20} color={color} />
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <AppText style={styles.statValue}>{value}</AppText>
+      <AppText style={styles.statLabel}>{label}</AppText>
     </View>
   );
 }

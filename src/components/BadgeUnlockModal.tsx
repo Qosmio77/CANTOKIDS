@@ -16,8 +16,12 @@ import {
   TouchableOpacity,
   Animated,
 } from 'react-native';
+import AppText from './AppText';
 import { Colors } from '../theme/colors';
-import { Badge } from '../services/badgeService';
+import { Badge, getBadgeLocalized } from '../services/badgeService';
+import { useTranslation } from '../hooks/useTranslation';
+import { useProgressStore } from '../store/useProgressStore';
+import { playSFX } from '../services/sfxService';
 
 interface BadgeUnlockModalProps {
   badges: Badge[];          // 本次新解鎖的徽章列表
@@ -30,6 +34,8 @@ export default function BadgeUnlockModal({
   visible,
   onClose,
 }: BadgeUnlockModalProps) {
+  const { t } = useTranslation();
+  const language = useProgressStore((s) => s.language);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const autoCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -54,6 +60,7 @@ export default function BadgeUnlockModal({
 
   useEffect(() => {
     if (visible && badges.length > 0) {
+      playSFX('levelup');
       startAnimIn();
       autoCloseTimer.current = setTimeout(onClose, 3500);
     }
@@ -66,6 +73,7 @@ export default function BadgeUnlockModal({
 
   // 只顯示第一個（若同時解鎖多個，關閉後父元件應繼續顯示下一個）
   const badge = badges[0];
+  const { name, description } = getBadgeLocalized(badge, language);
 
   return (
     <Modal
@@ -79,7 +87,7 @@ export default function BadgeUnlockModal({
         style={styles.overlay}
         activeOpacity={1}
         onPress={onClose}
-        accessibilityLabel="關閉徽章彈窗"
+        accessibilityLabel={t('badgeModalA11yClose')}
       >
         <Animated.View
           style={[
@@ -94,27 +102,29 @@ export default function BadgeUnlockModal({
           <View style={styles.glow} />
 
           {/* 標題 */}
-          <Text style={styles.headline}>🎉 新徽章解鎖！</Text>
+          <AppText style={styles.headline}>{t('badgeUnlockHeadline')}</AppText>
 
           {/* 徽章主體 */}
           <View style={styles.badgeCircle}>
-            <Text style={styles.badgeEmoji}>{badge.emoji}</Text>
+            <AppText style={styles.badgeEmoji}>{badge.emoji}</AppText>
           </View>
 
-          <Text style={styles.badgeName}>{badge.name}</Text>
-          <Text style={styles.badgeDesc}>{badge.description}</Text>
+          <AppText style={styles.badgeName}>{name}</AppText>
+          <AppText style={styles.badgeDesc}>{description}</AppText>
 
           {/* 多個徽章時顯示計數 */}
           {badges.length > 1 && (
-            <Text style={styles.moreHint}>還有 {badges.length - 1} 個新徽章 →</Text>
+            <AppText style={styles.moreHint}>
+              {t('badgeMoreHint').replace('{n}', String(badges.length - 1))}
+            </AppText>
           )}
 
           <TouchableOpacity
             style={styles.closeBtn}
             onPress={onClose}
-            accessibilityLabel="確認"
+            accessibilityLabel={t('confirm')}
           >
-            <Text style={styles.closeBtnText}>太棒了！</Text>
+            <AppText style={styles.closeBtnText}>{t('badgeModalClose')}</AppText>
           </TouchableOpacity>
         </Animated.View>
       </TouchableOpacity>

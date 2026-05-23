@@ -28,6 +28,7 @@ import {
   Platform,
   Vibration,
 } from 'react-native';
+import AppText from './AppText';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { Word } from '../types/word';
@@ -135,23 +136,23 @@ export default function WordCard({
 
         {/* ① Emoji */}
         {word.emoji ? (
-          <Text style={styles.emoji}>{word.emoji}</Text>
+          <AppText style={styles.emoji}>{word.emoji}</AppText>
         ) : (
           <View style={styles.emojiPlaceholder} />
         )}
 
         {/* ② 大漢字 */}
-        <Text style={[styles.character, isLearned && styles.characterLearned]}>
+        <AppText style={[styles.character, isLearned && styles.characterLearned]}>
           {word.character}
-        </Text>
+        </AppText>
 
         {/* ③ Jyutping */}
-        <Text style={styles.jyutping}>{word.jyutping}</Text>
+        <AppText style={styles.jyutping}>{word.jyutping}</AppText>
 
         {/* ④ English */}
-        <Text style={styles.english} numberOfLines={1}>
+        <AppText style={styles.english} numberOfLines={1}>
           {displayEnglish}
-        </Text>
+        </AppText>
 
         {/* 🔊 喇叭按鈕 — 左上角，點按播放粵語發音 */}
         {onAudioPress && (

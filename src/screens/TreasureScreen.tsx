@@ -16,24 +16,28 @@ import {
   ScrollView,
   SafeAreaView,
 } from 'react-native';
+import AppText from '../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
-import { TREASURES, RARITY_CONFIG, Rarity } from '../data/treasures';
+import { TREASURES, RARITY_CONFIG, Rarity, getTreasureLocalized } from '../data/treasures';
 import { useProgressStore } from '../store/useProgressStore';
+import { useTranslation } from '../hooks/useTranslation';
 import { Colors } from '../theme/colors';
 
 type FilterTab = 'all' | Rarity;
 
-const FILTER_TABS: { key: FilterTab; label: string }[] = [
-  { key: 'all',       label: '全部' },
-  { key: 'common',    label: '普通' },
-  { key: 'rare',      label: '罕見' },
-  { key: 'epic',      label: '史詩' },
-  { key: 'legendary', label: '傳說' },
-];
-
 export default function TreasureScreen({ navigation }: any) {
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const treasures = useProgressStore((s) => s.treasures);
+  const language  = useProgressStore((s) => s.language);
+  const { t } = useTranslation();
+
+  const FILTER_TABS: { key: FilterTab; label: string }[] = [
+    { key: 'all',       label: t('treasureAll') },
+    { key: 'common',    label: t('rarityCommon') },
+    { key: 'rare',      label: t('rarityRare') },
+    { key: 'epic',      label: t('rarityEpic') },
+    { key: 'legendary', label: t('rarityLegendary') },
+  ];
 
   const totalOwned = Object.values(treasures).filter((c) => c > 0).length;
   const totalTreasures = TREASURES.length;
@@ -49,19 +53,21 @@ export default function TreasureScreen({ navigation }: any) {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          accessibilityLabel="返回"
+          accessibilityLabel={t('back')}
           style={styles.backBtn}
         >
           <Ionicons name="chevron-back" size={26} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>🎁 寶物庫</Text>
+        <AppText style={styles.headerTitle}>{t('treasureVaultTitle')}</AppText>
         <View style={styles.headerRight} />
       </View>
 
       {/* 已收集計數 */}
-      <Text style={styles.collectedCount}>
-        已收集 {totalOwned} / {totalTreasures} 件
-      </Text>
+      <AppText style={styles.collectedCount}>
+        {t('treasureCollectedCount')
+          .replace('{n}', String(totalOwned))
+          .replace('{total}', String(totalTreasures))}
+      </AppText>
 
       {/* 稀有度篩選頁籤 */}
       <ScrollView
@@ -83,16 +89,16 @@ export default function TreasureScreen({ navigation }: any) {
                 isActive && { backgroundColor: tabColor, borderColor: tabColor },
               ]}
               onPress={() => setActiveTab(tab.key)}
-              accessibilityLabel={`篩選 ${tab.label}`}
+              accessibilityLabel={t('treasureFilterA11y').replace('{label}', tab.label)}
             >
-              <Text
+              <AppText
                 style={[
                   styles.tabLabel,
                   { color: isActive ? '#fff' : Colors.textSecondary },
                 ]}
               >
                 {tab.label}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           );
         })}
@@ -108,6 +114,12 @@ export default function TreasureScreen({ navigation }: any) {
             const hasGlow =
               owned &&
               (treasure.rarity === 'legendary' || treasure.rarity === 'epic');
+            const { name: treasureName } = getTreasureLocalized(treasure, language);
+            const rarityLabel =
+              treasure.rarity === 'common'    ? t('rarityCommon') :
+              treasure.rarity === 'rare'      ? t('rarityRare') :
+              treasure.rarity === 'epic'      ? t('rarityEpic') :
+              t('rarityLegendary');
 
             return (
               <View
@@ -130,22 +142,22 @@ export default function TreasureScreen({ navigation }: any) {
                 {/* 數量角標 */}
                 {owned && count > 1 && (
                   <View style={styles.countBadge}>
-                    <Text style={styles.countBadgeText}>×{count}</Text>
+                    <AppText style={styles.countBadgeText}>×{count}</AppText>
                   </View>
                 )}
 
                 {/* Emoji */}
-                <Text
+                <AppText
                   style={[
                     styles.cellEmoji,
                     !owned && styles.cellEmojiUnowned,
                   ]}
                 >
                   {treasure.emoji}
-                </Text>
+                </AppText>
 
                 {/* 名稱 */}
-                <Text
+                <AppText
                   style={[
                     styles.cellName,
                     owned
@@ -154,8 +166,8 @@ export default function TreasureScreen({ navigation }: any) {
                   ]}
                   numberOfLines={1}
                 >
-                  {owned ? treasure.name : '？？？'}
-                </Text>
+                  {owned ? treasureName : t('treasureUnknown')}
+                </AppText>
 
                 {/* 稀有度標籤 */}
                 {owned && (
@@ -165,7 +177,7 @@ export default function TreasureScreen({ navigation }: any) {
                       { backgroundColor: config.color },
                     ]}
                   >
-                    <Text style={styles.rarityPillText}>{config.label}</Text>
+                    <AppText style={styles.rarityPillText}>{rarityLabel}</AppText>
                   </View>
                 )}
               </View>

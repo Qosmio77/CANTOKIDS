@@ -3,7 +3,7 @@
  *
  * 優先順序（Native）：
  *   1. 本地 MP3（assets/audio/cantonese/*.mp3）— 真正廣東話，離線可用
- *   2. Google TTS URL fallback — 若本地檔不存在時使用
+ *   2. expo-speech (zh-HK) — 裝置原生 TTS，真正廣東話（不再用 Google TTS URL）
  *
  * Web：
  *   → window.speechSynthesis（zh-HK），無需下載任何檔案
@@ -76,17 +76,21 @@ async function speakNative(
         audioSource = localAsset; // require() 結果 (number)
         if (__DEV__) console.info(`[useAudio] 本地音檔: ${jyutping}.mp3`);
       } else {
-        // 2. Fallback：Google TTS URL
-        audioSource = {
-          uri:
-            `https://translate.google.com/translate_tts` +
-            `?ie=UTF-8&q=${encodeURIComponent(character)}` +
-            `&tl=zh-HK&client=tw-ob`,
-        };
-        if (__DEV__) console.info(`[useAudio] TTS fallback: ${character}`);
+        // 2. Fallback：expo-speech 裝置原生 TTS（zh-HK 廣東話）
+        if (__DEV__) console.info(`[useAudio] expo-speech fallback: ${character}`);
+        isLoadingRef.current = false;
+        const Speech = await import('expo-speech');
+        if (isMountedRef.current) {
+          Speech.speak(character, {
+            language: 'zh-HK',
+            rate: 0.85,
+            pitch: 1.0,
+          });
+        }
+        return;
       }
     } else {
-      // 普通話：直接用 TTS URL
+      // 普通話：Google TTS zh-TW（原本正常運作，保持不變）
       audioSource = {
         uri:
           `https://translate.google.com/translate_tts` +
@@ -167,11 +171,15 @@ export function useAudio() {
   const stop = useCallback(() => {
     if (Platform.OS === 'web') {
       window.speechSynthesis?.cancel();
-    } else if (soundRef.current) {
-      soundRef.current.setOnPlaybackStatusUpdate?.(null);
-      soundRef.current.stopAsync?.().catch(() => {});
-      soundRef.current.unloadAsync?.().catch(() => {});
-      soundRef.current = null;
+    } else {
+      // 停止 expo-speech（若正在朗讀）
+      import('expo-speech').then(Speech => Speech.stop()).catch(() => {});
+      if (soundRef.current) {
+        soundRef.current.setOnPlaybackStatusUpdate?.(null);
+        soundRef.current.stopAsync?.().catch(() => {});
+        soundRef.current.unloadAsync?.().catch(() => {});
+        soundRef.current = null;
+      }
     }
   }, []);
 

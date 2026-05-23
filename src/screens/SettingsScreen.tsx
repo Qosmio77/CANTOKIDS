@@ -21,6 +21,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
+import AppText from '../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { useProgressStore } from '../store/useProgressStore';
@@ -70,7 +71,7 @@ export default function SettingsScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>{t('settings')}</Text>
+        <AppText style={styles.topTitle}>{t('settings')}</AppText>
         <View style={{ width: 28 }} />
       </View>
 
@@ -79,7 +80,7 @@ export default function SettingsScreen({ navigation }: any) {
         <SectionHeader title={t('sectionProfile')} />
         <View style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>{t('childName')}</Text>
+            <AppText style={styles.rowLabel}>{t('childName')}</AppText>
             {editingName ? (
               <View style={styles.editRow}>
                 <TextInput
@@ -92,7 +93,7 @@ export default function SettingsScreen({ navigation }: any) {
                   onSubmitEditing={handleSaveName}
                 />
                 <TouchableOpacity style={styles.saveBtn} onPress={handleSaveName}>
-                  <Text style={styles.saveBtnText}>{t('save')}</Text>
+                  <AppText style={styles.saveBtnText}>{t('save')}</AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.cancelBtn}
@@ -106,12 +107,12 @@ export default function SettingsScreen({ navigation }: any) {
                 style={styles.editTrigger}
                 onPress={() => { setEditingName(true); setNameInput(displayName); }}
               >
-                <Text style={styles.rowValue}>{displayName}</Text>
+                <AppText style={styles.rowValue}>{displayName}</AppText>
                 <Ionicons name="pencil" size={14} color={Colors.primary} />
               </TouchableOpacity>
             )}
           </View>
-          {!!nameError && <Text style={styles.errorText}>{nameError}</Text>}
+          {!!nameError && <AppText style={styles.errorText}>{nameError}</AppText>}
         </View>
 
         {/* 介面語言 */}
@@ -121,7 +122,7 @@ export default function SettingsScreen({ navigation }: any) {
             style={styles.langRow}
             onPress={() => setLanguage('zh')}
           >
-            <Text style={styles.langLabel}>{t('languageZh')}</Text>
+            <AppText style={styles.langLabel}>{t('languageZh')}</AppText>
             {language === 'zh'
               ? <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />
               : <Ionicons name="ellipse-outline" size={22} color={Colors.textMuted} />
@@ -132,7 +133,7 @@ export default function SettingsScreen({ navigation }: any) {
             style={styles.langRow}
             onPress={() => setLanguage('en')}
           >
-            <Text style={styles.langLabel}>{t('languageEn')}</Text>
+            <AppText style={styles.langLabel}>{t('languageEn')}</AppText>
             {language === 'en'
               ? <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />
               : <Ionicons name="ellipse-outline" size={22} color={Colors.textMuted} />
@@ -143,7 +144,7 @@ export default function SettingsScreen({ navigation }: any) {
             style={styles.langRow}
             onPress={() => setLanguage('sc')}
           >
-            <Text style={styles.langLabel}>{t('languageSc')}</Text>
+            <AppText style={styles.langLabel}>{t('languageSc')}</AppText>
             {language === 'sc'
               ? <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />
               : <Ionicons name="ellipse-outline" size={22} color={Colors.textMuted} />
@@ -161,12 +162,16 @@ export default function SettingsScreen({ navigation }: any) {
           />
           <Divider />
           <View style={styles.webHintRow}>
-            <Text style={styles.webHintText}>
-              {language === 'en'
-                ? <>Open <Text style={styles.webHintUrl}>cantokids.app</Text>{'\n'}then scan the QR code to sync progress</>
-                : <>在電腦瀏覽器開啟 <Text style={styles.webHintUrl}>cantokids.app</Text>{'\n'}然後用手機掃描 QR Code 即可同步學習進度</>
-              }
-            </Text>
+            <AppText style={styles.webHintText}>
+              {(() => {
+                const parts = t('webHint').split('{url}');
+                return (
+                  <>
+                    {parts[0]}<AppText style={styles.webHintUrl}>cantokids.app</AppText>{parts[1] ?? ''}
+                  </>
+                );
+              })()}
+            </AppText>
           </View>
         </View>
 
@@ -196,18 +201,18 @@ export default function SettingsScreen({ navigation }: any) {
         <SectionHeader title={t('sectionAbout')} />
         <View style={styles.card}>
           <View style={styles.aboutRow}>
-            <Text style={styles.aboutLabel}>{t('aboutVersion')}</Text>
-            <Text style={styles.aboutValue}>{APP_VERSION}</Text>
+            <AppText style={styles.aboutLabel}>{t('aboutVersion')}</AppText>
+            <AppText style={styles.aboutValue}>{APP_VERSION}</AppText>
           </View>
           <Divider />
           <View style={styles.aboutRow}>
-            <Text style={styles.aboutLabel}>{t('aboutDictionary')}</Text>
-            <Text style={styles.aboutValue}>{t('aboutDictionaryValue')}</Text>
+            <AppText style={styles.aboutLabel}>{t('aboutDictionary')}</AppText>
+            <AppText style={styles.aboutValue}>{t('aboutDictionaryValue')}</AppText>
           </View>
           <Divider />
           <View style={styles.aboutRow}>
-            <Text style={styles.aboutLabel}>{t('aboutMadeBy')}</Text>
-            <Text style={styles.aboutValue}>{t('aboutMadeByValue')}</Text>
+            <AppText style={styles.aboutLabel}>{t('aboutMadeBy')}</AppText>
+            <AppText style={styles.aboutValue}>{t('aboutMadeByValue')}</AppText>
           </View>
         </View>
 
@@ -217,7 +222,7 @@ export default function SettingsScreen({ navigation }: any) {
           onPress={() => navigation.navigate('ParentLogin')}
         >
           <Ionicons name="people" size={20} color={Colors.white} />
-          <Text style={styles.parentBtnText}>{t('parentDashboard')}</Text>
+          <AppText style={styles.parentBtnText}>{t('parentDashboard')}</AppText>
           <Ionicons name="chevron-forward" size={16} color={Colors.white} />
         </TouchableOpacity>
       </ScrollView>
@@ -226,7 +231,7 @@ export default function SettingsScreen({ navigation }: any) {
 }
 
 function SectionHeader({ title }: { title: string }) {
-  return <Text style={styles.sectionHeader}>{title}</Text>;
+  return <AppText style={styles.sectionHeader}>{title}</AppText>;
 }
 
 function Divider() {
@@ -243,7 +248,7 @@ function SettingRow({
   return (
     <TouchableOpacity style={styles.settingRow} onPress={onPress}>
       <Ionicons name={icon} size={20} color={Colors.primary} />
-      <Text style={styles.settingLabel}>{label}</Text>
+      <AppText style={styles.settingLabel}>{label}</AppText>
       <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
     </TouchableOpacity>
   );
