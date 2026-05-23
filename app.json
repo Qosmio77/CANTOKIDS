@@ -49,8 +49,7 @@
       "themeColor": "#E8A000",
       "backgroundColor": "#FFFBEB",
       "output": "single",
-      "description": "為小朋友設計的繁體字與廣東話學習應用程式",
-      "publicPath": "/CANTOKIDS/"
+      "description": "為小朋友設計的繁體字與廣東話學習應用程式"
     },
     "plugins": [
       "expo-av"
