@@ -36,6 +36,9 @@ jobs:
         env:
           CI: true
 
+      - name: Patch bundle (fix import.meta for classic script)
+        run: bash scripts/postbuild-web.sh dist
+
       - name: Add .nojekyll
         run: touch dist/.nojekyll
 
