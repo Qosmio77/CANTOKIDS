@@ -126,42 +126,48 @@ function StepName({
     }
   }, [isCurrent]);
 
-  return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={s.step}>
-        <View style={s.charBoxSmall}>
-          <Image source={CHARS.bunWave} style={s.charImgSmall} resizeMode="contain" />
-        </View>
-        <View style={s.textBlock}>
-          <AppText style={s.stepTitle}>你叫什麼名字？</AppText>
-          <AppText style={s.stepDesc}>湯圓仔想認識你！{'\n'}輸入小朋友的名字吧</AppText>
-        </View>
-        <TextInput
-          ref={inputRef}
-          style={[s.nameInput, nameError ? s.nameInputError : null]}
-          placeholder="例如：小明"
-          placeholderTextColor={Colors.textMuted}
-          value={childName}
-          onChangeText={(v) => {
-            setChildName(v);
-            setNameError('');
-          }}
-          maxLength={10}
-          returnKeyType="done"
-          onSubmitEditing={onNext}
-          accessibilityLabel="小朋友名字輸入"
-        />
-        {!!nameError && <AppText style={s.errorText}>{nameError}</AppText>}
-        <AppText style={s.nameHint}>（稍後可在家長控制台更改）</AppText>
-        <TouchableOpacity
-          style={[s.nextBtn, !childName.trim() && s.nextBtnDisabled]}
-          onPress={onNext}
-          activeOpacity={0.85}
-        >
-          <AppText style={s.nextBtnText}>下一步</AppText>
-          <Ionicons name="arrow-forward" size={18} color="#fff" />
-        </TouchableOpacity>
+  const content = (
+    <View style={s.step}>
+      <View style={s.charBoxSmall}>
+        <Image source={CHARS.bunWave} style={s.charImgSmall} resizeMode="contain" />
       </View>
+      <View style={s.textBlock}>
+        <AppText style={s.stepTitle}>你叫什麼名字？</AppText>
+        <AppText style={s.stepDesc}>湯圓仔想認識你！{'\n'}輸入小朋友的名字吧</AppText>
+      </View>
+      <TextInput
+        ref={inputRef}
+        style={[s.nameInput, nameError ? s.nameInputError : null]}
+        placeholder="例如：小明"
+        placeholderTextColor={Colors.textMuted}
+        value={childName}
+        onChangeText={(v) => {
+          setChildName(v);
+          setNameError('');
+        }}
+        maxLength={10}
+        returnKeyType="done"
+        onSubmitEditing={onNext}
+        accessibilityLabel="小朋友名字輸入"
+      />
+      {!!nameError && <AppText style={s.errorText}>{nameError}</AppText>}
+      <AppText style={s.nameHint}>（稍後可在家長控制台更改）</AppText>
+      <TouchableOpacity
+        style={[s.nextBtn, !childName.trim() && s.nextBtnDisabled]}
+        onPress={onNext}
+        activeOpacity={0.85}
+      >
+        <AppText style={s.nextBtnText}>下一步</AppText>
+        <Ionicons name="arrow-forward" size={18} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
+
+  // On web, TouchableWithoutFeedback intercepts all taps including TextInput focus.
+  // Keyboard.dismiss is a no-op on web anyway, so skip the wrapper entirely.
+  return Platform.OS === 'web' ? content : (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      {content}
     </TouchableWithoutFeedback>
   );
 }
