@@ -35,7 +35,6 @@ jobs:
         run: CI=1 npx expo export --platform web --output-dir dist
         env:
           CI: true
-          EXPO_PUBLIC_BASE_PATH: /CANTOKIDS/
 
       - name: Add .nojekyll
         run: touch dist/.nojekyll

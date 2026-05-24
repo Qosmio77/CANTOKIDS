@@ -65,6 +65,9 @@
       "廣東話",
       "繁體字"
     ],
+    "experiments": {
+      "baseUrl": "/CANTOKIDS"
+    },
     "extra": {
       "eas": {
         "projectId": "0f99add3-2b7e-48b0-8fe6-a6ead6e9f0d5"
