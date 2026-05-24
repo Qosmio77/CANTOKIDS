@@ -1,0 +1,7 @@
+[build]
+  command = "npm ci --legacy-peer-deps && CI=1 npx expo export --platform web --output-dir dist && bash scripts/postbuild-web.sh dist"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  CI = "true"
