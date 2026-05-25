@@ -29,9 +29,9 @@ import type { RootStackParamList } from '../navigation/AppNavigator';
 
 // ── Daily Task IDs ────────────────────────────────────────────────────────────
 const DAILY_TASKS = [
-  { id: 'learn',    emojiZh: '📖', labelZh: '學習 1 個新字', labelEn: 'Learn 1 new character' },
-  { id: 'practice', emojiZh: '✏️', labelZh: '完成筆順練習',  labelEn: 'Complete stroke practice' },
-  { id: 'quiz',     emojiZh: '🎯', labelZh: '完成一次測驗',  labelEn: 'Complete a quiz' },
+  { id: 'learn',    icon: require('../../assets/icons/icon_book.png'),   labelZh: '學習 1 個新字', labelEn: 'Learn 1 new character' },
+  { id: 'practice', icon: require('../../assets/icons/icon_pencil.png'), labelZh: '完成筆順練習',  labelEn: 'Complete stroke practice' },
+  { id: 'quiz',     icon: require('../../assets/icons/icon_target.png'), labelZh: '完成一次測驗',  labelEn: 'Complete a quiz' },
 ];
 
 const { width: SW } = Dimensions.get('window');
@@ -200,7 +200,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => (navigation as any).navigate('Practice')}
             activeOpacity={0.82}
           >
-            <AppText style={s.quickEmoji}>✏️</AppText>
+            <Image source={require('../../assets/icons/icon_pencil.png')} style={s.quickIcon} />
             <AppText style={s.quickLabel}>
               {language === 'en' ? 'Free Practice' : language === 'sc' ? '自由练习' : '自由練習'}
             </AppText>
@@ -210,7 +210,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => (navigation as any).navigate('QuizMenu')}
             activeOpacity={0.82}
           >
-            <AppText style={s.quickEmoji}>🎯</AppText>
+            <Image source={require('../../assets/icons/icon_target.png')} style={s.quickIcon} />
             <AppText style={s.quickLabel}>
               {language === 'en' ? 'Quiz' : '測驗'}
             </AppText>
@@ -220,7 +220,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => (navigation as any).navigate('PracticeSheet')}
             activeOpacity={0.82}
           >
-            <AppText style={s.quickEmoji}>📄</AppText>
+            <Image source={require('../../assets/icons/icon_notepad.png')} style={s.quickIcon} />
             <AppText style={s.quickLabel}>
               {language === 'en' ? 'Sheet' : language === 'sc' ? '练习纸' : '練習紙'}
             </AppText>
@@ -230,7 +230,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => (navigation as any).navigate('VoicePractice')}
             activeOpacity={0.82}
           >
-            <AppText style={s.quickEmoji}>🎤</AppText>
+            <Image source={require('../../assets/icons/icon_mic.png')} style={s.quickIcon} />
             <AppText style={s.quickLabel}>
               {language === 'en' ? 'Voice' : language === 'sc' ? '语音练习' : '語音練習'}
             </AppText>
@@ -240,7 +240,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => (navigation as any).navigate('Curriculum')}
             activeOpacity={0.82}
           >
-            <AppText style={s.quickEmoji}>📚</AppText>
+            <Image source={require('../../assets/icons/icon_books.png')} style={s.quickIcon} />
             <AppText style={s.quickLabel}>
               {language === 'en' ? 'K1-K3' : 'K1-K3 課程'}
             </AppText>
@@ -263,7 +263,7 @@ export default function HomeScreen({ navigation }: Props) {
               const done = todayTasks.includes(task.id);
               return (
                 <View key={task.id} style={s.taskRow}>
-                  <AppText style={s.taskEmoji}>{task.emojiZh}</AppText>
+                  <Image source={task.icon} style={s.taskIcon} />
                   <AppText style={[s.taskLabel, done && s.taskLabelDone]} numberOfLines={1}>
                     {language === 'en' ? task.labelEn : task.labelZh}
                   </AppText>
@@ -372,7 +372,7 @@ export default function HomeScreen({ navigation }: Props) {
                 onPress={() => (navigation as any).navigate('TopicDetail', { topicId: topic.id })}
                 activeOpacity={0.82}
               >
-                <Image source={topic.iconPng} style={s.topicIcon} resizeMode="contain" />
+                <Image source={topic.charImage} style={s.topicCharImage} resizeMode="contain" />
                 <AppText style={s.topicName} numberOfLines={1}>
                   {language === 'en' ? topic.title_en :
                    language === 'sc' ? topic.title_sc : topic.title_zh}
@@ -465,6 +465,7 @@ const s = StyleSheet.create({
     borderBottomColor: 'rgba(180,175,155,0.4)', borderRightColor: 'rgba(180,175,155,0.4)',
   },
   quickEmoji: { fontSize: 28 },
+  quickIcon: { width: 30, height: 30, tintColor: Colors.primary },
   quickLabel: { fontSize: 12, fontWeight: '700', color: Colors.textSecondary, textAlign: 'center' },
 
   // ── Hatchling banner ──
@@ -520,6 +521,7 @@ const s = StyleSheet.create({
   foodBadgeText: { fontSize: 13, fontWeight: '700', color: '#B45309' },
   taskRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   taskEmoji: { fontSize: 15, width: 22 },
+  taskIcon: { width: 18, height: 18, tintColor: Colors.textSecondary },
   taskLabel: { flex: 1, fontSize: 12, color: Colors.textSecondary, fontWeight: '600' },
   taskLabelDone: { textDecorationLine: 'line-through', color: Colors.textMuted },
   taskCircle: {
@@ -604,7 +606,8 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 7,
   },
-  topicEmoji: { fontSize: 48 },
-  topicIcon:  { width: CARD_W - 20, height: CARD_W - 20 },
+  topicEmoji:     { fontSize: 48 },
+  topicCharImage: { width: CARD_W - 20, height: CARD_W - 20 },
+  topicIcon:      { width: CARD_W - 20, height: CARD_W - 20 },
   topicName:  { fontSize: 18, fontWeight: '700', color: Colors.text, textAlign: 'center' },
 });

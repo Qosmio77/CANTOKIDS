@@ -28,6 +28,7 @@ export interface TopicDef {
   emoji: string;
   iconName: string;
   iconPng: any;               // PNG icon (require())
+  charImage: any;             // Carrot character image for topic card
   bgColor: string;
   borderColor: string;
   iconBgColor: string;
@@ -44,6 +45,7 @@ export const TOPICS: TopicDef[] = [
     emoji: '🏠',
     iconName: 'home',
     iconPng: require('../../assets/icons/icon_home.png'),
+    charImage: require('../../assets/characters/char_carrot_wave.png'),
     bgColor: '#EFF6FF',
     borderColor: '#BFDBFE',
     iconBgColor: '#DBEAFE',
@@ -58,6 +60,7 @@ export const TOPICS: TopicDef[] = [
     emoji: '🎒',
     iconName: 'school',
     iconPng: require('../../assets/icons/icon_backpack.png'),
+    charImage: require('../../assets/characters/char_carrot_read.png'),
     bgColor: '#F0FDF4',
     borderColor: '#BBF7D0',
     iconBgColor: '#D1FAE5',
@@ -72,6 +75,7 @@ export const TOPICS: TopicDef[] = [
     emoji: '🍜',
     iconName: 'restaurant',
     iconPng: require('../../assets/icons/icon_mooncake.png'),
+    charImage: require('../../assets/characters/char_carrot_idea.png'),
     bgColor: '#FFFBEB',
     borderColor: '#FDE68A',
     iconBgColor: '#FEF3C7',
@@ -86,6 +90,7 @@ export const TOPICS: TopicDef[] = [
     emoji: '🐼',
     iconName: 'paw',
     iconPng: require('../../assets/icons/icon_panda.png'),
+    charImage: require('../../assets/characters/char_carrot_jump.png'),
     bgColor: '#FFF7ED',
     borderColor: '#FDBA74',
     iconBgColor: '#FED7AA',
@@ -103,6 +108,7 @@ export const TOPICS: TopicDef[] = [
     emoji: '🚌',
     iconName: 'bus',
     iconPng: require('../../assets/icons/icon_globe.png'),
+    charImage: require('../../assets/characters/char_carrot_sign.png'),
     bgColor: '#F5F3FF',
     borderColor: '#DDD6FE',
     iconBgColor: '#EDE9FE',
@@ -117,6 +123,7 @@ export const TOPICS: TopicDef[] = [
     emoji: '🏮',
     iconName: 'sparkles',
     iconPng: require('../../assets/icons/icon_lantern.png'),
+    charImage: require('../../assets/characters/char_carrot_teach.png'),
     bgColor: '#FFF1F2',
     borderColor: '#FECDD3',
     iconBgColor: '#FFE4E6',
@@ -131,6 +138,7 @@ export const TOPICS: TopicDef[] = [
     emoji: '😊',
     iconName: 'happy',
     iconPng: require('../../assets/icons/icon_heart.png'),
+    charImage: require('../../assets/characters/char_carrot_question.png'),
     bgColor: '#FDF4FF',
     borderColor: '#E9D5FF',
     iconBgColor: '#F3E8FF',
