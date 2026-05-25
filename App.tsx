@@ -13,6 +13,7 @@ import { Audio } from 'expo-av';
 
 export default function App() {
   const checkAndUpdateStreak = useProgressStore((s) => s.checkAndUpdateStreak);
+  const setLanguage = useProgressStore((s) => s.setLanguage);
 
   // Web: skip custom font loading (font URLs break under GitHub Pages subpath)
   // Mobile: load JF Open Huninn font
@@ -23,6 +24,15 @@ export default function App() {
   );
 
   useEffect(() => {
+    // Web: read ?lang=en / ?lang=zh / ?lang=sc from URL and apply immediately
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const lang = params.get('lang');
+      if (lang === 'en' || lang === 'zh' || lang === 'sc') {
+        setLanguage(lang);
+      }
+    }
+
     checkAndUpdateStreak();
     initIAP().catch(() => {});
 
