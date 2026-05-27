@@ -44,14 +44,17 @@ export default function HanziChar({
     );
   }
 
-  const scale = size / HANZI_GRID;
+  // 加 padding 令字居中，與 HanziWriter 自身的 padding 一致（約 8%）
+  const padding = Math.round(size * 0.08);
+  const drawSize = size - 2 * padding;
+  const scale = drawSize / HANZI_GRID;
 
   return (
     <View style={{ width: size, height: size, backgroundColor }}>
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         {/* HanziWriter 坐標系：原點在左下角，Y 向上。SVG 原點在左上角，Y 向下。
-            Transform: 先把 Y 反轉，再平移至正確位置 */}
-        <G transform={`translate(0, ${size}) scale(${scale}, -${scale})`}>
+            Transform: translate to (padding, size-padding)，加 padding 令字四邊留空 */}
+        <G transform={`translate(${padding}, ${size - padding}) scale(${scale}, -${scale})`}>
           {/* 輪廓層（可選） */}
           {showOutline && data.strokes.map((d, i) => (
             <Path
