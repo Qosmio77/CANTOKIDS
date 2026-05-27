@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import AppText from '../../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../theme/colors';
+import { Colors, CHAR_FONT } from '../../theme/colors';
 import { Word } from '../../types/word';
 import { useAudio } from '../../hooks/useAudio';
 import { playSFX } from '../../services/sfxService';
@@ -350,15 +350,30 @@ export default function QuizScreen({ route, navigation }: any) {
         {currentQ.type === 'readPick' && (
           <>
             <AppText style={styles.questionHint}>{t('quizHintRead')}</AppText>
-            <Animated.Text style={[styles.questionChar, { transform: [{ scale: scaleAnim }] }]}>
-              {currentQ.correct.character}
-            </Animated.Text>
+            <View style={styles.questionCard}>
+              <Animated.Text style={[styles.questionChar, { transform: [{ scale: scaleAnim }] }]}>
+                {currentQ.correct.character}
+              </Animated.Text>
+              <AppText style={styles.questionMeaningEn}>{currentQ.correct.meaning_en}</AppText>
+            </View>
           </>
         )}
         {currentQ.type === 'findWrong' && (
           <>
             <AppText style={styles.questionHint}>{t('quizHintFindWrong')}</AppText>
-            <AppText style={styles.questionSubhint}>{t('quizHintFindWrongSub')}</AppText>
+            <View style={styles.questionCard}>
+              <View style={styles.findWrongThemeRow}>
+                {currentQ.options
+                  .filter((o) => o.id !== currentQ.correct.id)
+                  .map((w) => (
+                    <View key={w.id} style={styles.findWrongThemeItem}>
+                      <AppText style={styles.findWrongThemeChar}>{w.character}</AppText>
+                      <AppText style={styles.findWrongThemeMeaning}>{w.meaning_en}</AppText>
+                    </View>
+                  ))}
+              </View>
+              <AppText style={styles.findWrongCardText}>👆 {t('quizHintFindWrongSub')}</AppText>
+            </View>
           </>
         )}
       </View>
@@ -387,13 +402,10 @@ export default function QuizScreen({ route, navigation }: any) {
                 <AppText style={styles.optionChar}>{option.character}</AppText>
               )}
               {currentQ.type === 'findWrong' && (
-                <AppText style={styles.optionMeaning}>{option.meaning_zh}</AppText>
+                <AppText style={styles.optionMeaning}>{option.meaning_en}</AppText>
               )}
               {currentQ.type === 'readPick' && (
-                <>
-                  <AppText style={styles.optionJyutping}>{option.jyutping}</AppText>
-                  <AppText style={styles.optionPinyin}>{option.pinyin}</AppText>
-                </>
+                <AppText style={styles.optionMeaningEn}>{option.meaning_en}</AppText>
               )}
               {selectedOption && isAnswer && (
                 <Ionicons name="checkmark-circle" size={20} color={Colors.success} style={styles.resultIcon} />
@@ -453,7 +465,23 @@ const styles = StyleSheet.create({
   questionSubhint: { fontSize: 13, color: Colors.textMuted, marginBottom: 16, textAlign: 'center' },
   speakerBtn: { alignItems: 'center', gap: 8 },
   speakerLabel: { fontSize: 13, color: Colors.cantonese },
-  questionChar: { fontSize: 80, fontWeight: '800', color: Colors.text },
+  questionCard: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 40,
+    marginTop: 8,
+    gap: 4,
+  },
+  questionChar: { fontSize: 80, fontFamily: CHAR_FONT, fontWeight: '400', color: Colors.text },
+  questionMeaningEn: { fontSize: 28, fontWeight: '700', color: Colors.textSecondary, marginTop: 4 },
+  findWrongThemeRow: { flexDirection: 'row', gap: 16, marginBottom: 10 },
+  findWrongThemeItem: { alignItems: 'center', gap: 2 },
+  findWrongThemeChar: { fontSize: 36, fontFamily: CHAR_FONT, fontWeight: '400', color: Colors.text },
+  findWrongThemeMeaning: { fontSize: 11, color: Colors.textSecondary },
+  findWrongCardText: { fontSize: 12, color: Colors.textMuted, textAlign: 'center' },
+  optionMeaningEn: { fontSize: 18, fontWeight: '700', color: Colors.text, textAlign: 'center', paddingHorizontal: 4 },
   optionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, paddingHorizontal: 20, justifyContent: 'center' },
   optionCard: {
     width: '45%',
@@ -491,7 +519,7 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.error,
     borderRightColor: Colors.error,
   },
-  optionChar: { fontSize: 36, fontWeight: '700', color: Colors.text },
+  optionChar: { fontSize: 36, fontFamily: CHAR_FONT, fontWeight: '400', color: Colors.text },
   optionMeaning: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
   optionJyutping: { fontSize: 20, fontWeight: '700', color: Colors.cantonese },
   optionPinyin: { fontSize: 13, color: Colors.textMuted },

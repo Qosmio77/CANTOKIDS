@@ -42,7 +42,7 @@ import TreasureDropModal from '../components/TreasureDropModal';
 import { rollLoot } from '../services/lootService';
 import { playSFX } from '../services/sfxService';
 import { Treasure } from '../data/treasures';
-import { Colors } from '../theme/colors';
+import { Colors, CHAR_FONT } from '../theme/colors';
 import { useTranslation } from '../hooks/useTranslation';
 
 // ── 取得對應 level 的單字陣列 ──────────────────────────────────────
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(180,175,155,0.4)',
     borderRightColor: 'rgba(180,175,155,0.4)',
   },
-  charText: { fontSize: 64, fontWeight: '800', color: '#1F2937', lineHeight: 72 },
+  charText: { fontSize: 64, fontFamily: CHAR_FONT, fontWeight: '400', color: '#1F2937', lineHeight: 72 },
   charPinyin: { fontSize: 16, color: '#9CA3AF', fontWeight: '600', marginTop: 4 },
 
   optionsGrid: {

@@ -69,3 +69,6 @@ export const Colors = {
   error:          '#ba1a1a',
   errorLight:     '#ffdad6',
 } as const;
+
+/** 字卡漢字字型 — 與 HanziWriter 筆畫風格一致（NotoSerifTC 楷書子集） */
+export const CHAR_FONT = 'NotoSerifTC';

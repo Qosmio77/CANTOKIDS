@@ -20,7 +20,10 @@ export default function App() {
   const [fontsLoaded] = useFonts(
     Platform.OS === 'web'
       ? {}
-      : { 'JFOpenHuninn': require('./assets/fonts/jf-openhuninn.ttf') }
+      : {
+          'JFOpenHuninn':     require('./assets/fonts/jf-openhuninn.ttf'),
+          'NotoSerifTC':      require('./assets/fonts/NotoSerifTC-subset.ttf'),
+        }
   );
 
   useEffect(() => {

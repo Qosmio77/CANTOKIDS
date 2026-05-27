@@ -44,7 +44,7 @@ import {
 import { useAudio } from '../hooks/useAudio';
 import { getWordById, ALL_WORDS, SEEDLING_IDS, SAPLING_IDS, TREE_IDS, SUNFLOWER_IDS, RAINBOW_IDS, GALAXY_IDS } from '../data/allWords';
 import { buildBadgeStats, getNewlyUnlockedBadges, Badge } from '../services/badgeService';
-import { Colors } from '../theme/colors';
+import { Colors, CHAR_FONT } from '../theme/colors';
 import { useTranslation } from '../hooks/useTranslation';
 import { playSFX } from '../services/sfxService';
 
@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   contentTypeBadgeText: { fontSize: 11, fontWeight: '700' },
-  mainChar: { fontWeight: '800', color: '#1F2937', lineHeight: undefined },
+  mainChar: { fontFamily: CHAR_FONT, fontWeight: '400', color: '#1F2937', lineHeight: undefined },
   pronunciationRow: { flexDirection: 'row', gap: 10 },
   pronBadge: {
     flexDirection: 'row',
@@ -638,7 +638,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(180,175,155,0.4)',
     borderRightColor: 'rgba(180,175,155,0.4)',
   },
-  componentChar:     { fontSize: 22, fontWeight: '700', color: '#1F2937' },
+  componentChar:     { fontSize: 22, fontFamily: CHAR_FONT, fontWeight: '400', color: '#1F2937' },
   componentJyutping: { fontSize: 12, color: '#1D4ED8', fontWeight: '600' },
 
   // 分頁
@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
   idiomNote: { backgroundColor: '#F5F3FF' },
   idiomCharsRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
   idiomCharItem: { alignItems: 'center', gap: 4 },
-  idiomCharText: { fontSize: 24, fontWeight: '700', color: '#4C1D95' },
+  idiomCharText: { fontSize: 24, fontFamily: CHAR_FONT, fontWeight: '400', color: '#4C1D95' },
   idiomCharJp:   { fontSize: 12, color: '#7C3AED', fontWeight: '600' },
 
   nextTabBtn: {
