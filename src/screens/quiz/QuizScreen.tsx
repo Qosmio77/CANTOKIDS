@@ -10,6 +10,7 @@ import {
 import AppText from '../../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, CHAR_FONT } from '../../theme/colors';
+import HanziChar from '../../components/HanziChar';
 import { Word } from '../../types/word';
 import { useAudio } from '../../hooks/useAudio';
 import { playSFX } from '../../services/sfxService';
@@ -351,9 +352,11 @@ export default function QuizScreen({ route, navigation }: any) {
           <>
             <AppText style={styles.questionHint}>{t('quizHintRead')}</AppText>
             <View style={styles.questionCard}>
-              <Animated.Text style={[styles.questionChar, { transform: [{ scale: scaleAnim }] }]}>
-                {currentQ.correct.character}
-              </Animated.Text>
+              <Animated.View style={{ transform: [{ scale: scaleAnim }], flexDirection: 'row' }}>
+                {[...currentQ.correct.character].map((c, i) => (
+                  <HanziChar key={i} character={c} size={80} color={Colors.text} />
+                ))}
+              </Animated.View>
               <AppText style={styles.questionMeaningEn}>{currentQ.correct.meaning_en}</AppText>
             </View>
           </>
@@ -367,7 +370,7 @@ export default function QuizScreen({ route, navigation }: any) {
                   .filter((o) => o.id !== currentQ.correct.id)
                   .map((w) => (
                     <View key={w.id} style={styles.findWrongThemeItem}>
-                      <AppText style={styles.findWrongThemeChar}>{w.character}</AppText>
+                      <HanziChar character={w.character} size={36} color={Colors.text} />
                       <AppText style={styles.findWrongThemeMeaning}>{w.meaning_en}</AppText>
                     </View>
                   ))}
@@ -399,7 +402,11 @@ export default function QuizScreen({ route, navigation }: any) {
             >
               {/* 修復 C-4: 所有模式都正確渲染選項內容 */}
               {(currentQ.type === 'listenPick' || currentQ.type === 'findWrong') && (
-                <AppText style={styles.optionChar}>{option.character}</AppText>
+                <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+                  {[...option.character].map((c, ci) => (
+                    <HanziChar key={ci} character={c} size={36} color={Colors.text} />
+                  ))}
+                </View>
               )}
               {currentQ.type === 'findWrong' && (
                 <AppText style={styles.optionMeaning}>{option.meaning_en}</AppText>

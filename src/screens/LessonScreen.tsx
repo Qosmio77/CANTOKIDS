@@ -32,6 +32,7 @@ import AppText from '../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
 import PronButton from '../components/PronButton';
 import HanziWriterView, { HanziWriterHandle } from '../components/HanziWriterView';
+import HanziChar from '../components/HanziChar';
 import BadgeUnlockModal from '../components/BadgeUnlockModal';
 import LevelUpModal from '../components/LevelUpModal';
 import {
@@ -289,10 +290,17 @@ export default function LessonScreen({ route, navigation }: any) {
           <AppText style={[styles.contentTypeBadgeText, { color: typeColor }]}>{typeLabel}</AppText>
         </View>
 
-        {/* 主字顯示 */}
-        <AppText style={[styles.mainChar, { fontSize: mainCharFontSize(word.character.length) }]}>
-          {word.character}
-        </AppText>
+        {/* 主字顯示 — 用 HanziChar（與寫字練習完全相同筆畫數據） */}
+        <View style={styles.mainCharRow}>
+          {[...word.character].map((c, i) => (
+            <HanziChar
+              key={i}
+              character={c}
+              size={mainCharFontSize(word.character.length)}
+              color="#1F2937"
+            />
+          ))}
+        </View>
 
         {/* 發音徽章 */}
         {isMultiChar ? (
@@ -599,6 +607,7 @@ const styles = StyleSheet.create({
   },
   contentTypeBadgeText: { fontSize: 11, fontWeight: '700' },
   mainChar: { fontFamily: CHAR_FONT, fontWeight: '400', color: '#1F2937', lineHeight: undefined },
+  mainCharRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   pronunciationRow: { flexDirection: 'row', gap: 10 },
   pronBadge: {
     flexDirection: 'row',

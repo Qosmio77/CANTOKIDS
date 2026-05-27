@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 import AppText from '../components/AppText';
 import { Ionicons } from '@expo/vector-icons';
+import HanziChar from '../components/HanziChar';
 import {
   BOSSES,
   BossDef,
@@ -324,7 +325,11 @@ export default function BossBattleScreen({ route, navigation }: any) {
         <View style={styles.questionSection}>
           {/* 顯示漢字 */}
           <View style={styles.charBox}>
-            <AppText style={styles.charText}>{currentQ.word.character}</AppText>
+            <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+              {[...currentQ.word.character].map((c, i) => (
+                <HanziChar key={i} character={c} size={64} color="#1F2937" />
+              ))}
+            </View>
             <AppText style={styles.charPinyin}>{currentQ.word.jyutping}</AppText>
           </View>
 
